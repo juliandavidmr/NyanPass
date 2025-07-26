@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, FlatList, TouchableOpacity, Modal } from 'react-native';
+import { Check, X } from '@tamagui/lucide-icons';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XStack, YStack, Button, Text, Input } from 'tamagui';
-import { X, Check, Search } from '@tamagui/lucide-icons';
+import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Button, Input, Text, XStack, YStack } from 'tamagui';
+
 import { useThemeColor } from '../hooks/useThemeColor';
 
 interface BreedSelectorProps {
@@ -17,20 +18,20 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
   const [searchQuery, setSearchQuery] = useState('');
   const [customBreed, setCustomBreed] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  
-  const backgroundColor = useThemeColor({ light: '#fff', dark: '#1c1c1e' });
-  const textColor = useThemeColor({ light: '#000', dark: '#fff' });
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' });
-  const placeholderColor = useThemeColor({ light: '#a0a0a0', dark: '#6c6c6e' });
-  
+
+  const backgroundColor = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
+  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'color');
+  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'color');
+  const placeholderColor = useThemeColor({ light: '#a0a0a0', dark: '#6c6c6e' }, 'color');
+
   // Obtener la lista de razas desde las traducciones
   const breeds = t('cat_breeds', { returnObjects: true }) as string[];
-  
+
   // Filtrar razas según la búsqueda
   const filteredBreeds = breeds.filter(breed =>
     breed.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
   // Manejar la selección de una raza
   const handleSelectBreed = (breed: string) => {
     onChange(breed);
@@ -38,7 +39,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
     setSearchQuery('');
     setShowCustomInput(false);
   };
-  
+
   // Manejar la selección de una raza personalizada
   const handleCustomBreed = () => {
     if (customBreed.trim()) {
@@ -49,12 +50,12 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
       setShowCustomInput(false);
     }
   };
-  
+
   // Mostrar el input para raza personalizada
   const showCustomBreedInput = () => {
     setShowCustomInput(true);
   };
-  
+
   return (
     <View>
       {/* Campo de selección que abre el modal */}
@@ -66,7 +67,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
           {value || placeholder || t('cat_form.breed_placeholder')}
         </Text>
       </TouchableOpacity>
-      
+
       {/* Modal de selección de raza */}
       <Modal
         animationType="slide"
@@ -82,7 +83,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
                 <X size={24} color={textColor} />
               </TouchableOpacity>
             </XStack>
-            
+
             {/* Barra de búsqueda */}
             <XStack padding={15} gap={10}>
               <Input
@@ -93,10 +94,9 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
                 autoCapitalize="none"
                 autoCorrect={false}
                 clearButtonMode="while-editing"
-                icon={<Search size={18} />}
               />
             </XStack>
-            
+
             {/* Lista de razas */}
             {!showCustomInput ? (
               <YStack flex={1}>

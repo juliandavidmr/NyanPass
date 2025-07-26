@@ -1,6 +1,6 @@
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { storageService } from "./storage";
+import { storageService } from "../services/storage";
 
 // Definir los recursos de traducción
 const resources = {

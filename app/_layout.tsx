@@ -7,8 +7,10 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { initI18n } from '@/config/i18n';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { initI18n } from '@/services/i18n';
+
+import AuthGuard from '../components/AuthGuard';
 
 const config = createTamagui(defaultConfig)
 
@@ -28,11 +30,14 @@ export default function RootLayout() {
   return (
     <TamaguiProvider config={config} defaultTheme={colorScheme!}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
+        <AuthGuard>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </AuthGuard>
       </ThemeProvider>
     </TamaguiProvider>
   );

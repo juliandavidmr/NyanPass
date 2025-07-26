@@ -9,9 +9,9 @@ import AllergyForm from '../../components/AllergyForm';
 import { ThemedView } from '../../components/ThemedView';
 import TreatmentForm from '../../components/TreatmentForm';
 import { IconSymbol } from '../../components/ui/IconSymbol';
+import { formatDate } from '../../config/i18n';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
-import { formatDate } from '../../services/i18n';
 import { storageService } from '../../services/storage';
 
 // Tipos para el historial médico

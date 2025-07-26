@@ -5,8 +5,8 @@ import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity, useColorScheme } 
 import { Button, Spinner, Stack, Text, View, XStack } from 'tamagui';
 
 import VaccineForm from '../../components/VaccineForm';
+import { formatDate } from '../../config/i18n';
 import Colors from '../../constants/Colors';
-import { formatDate } from '../../services/i18n';
 import { CatProfile, storageService, Vaccine } from '../../services/storage';
 
 // Función para verificar si una vacuna está vencida o próxima

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Input, Text, XStack, YStack } from 'tamagui';
+
 import { useThemeColor } from '../hooks/useThemeColor';
 
 interface TraitsSelectorProps {
@@ -31,11 +32,10 @@ const TraitsSelector: React.FC<TraitsSelectorProps> = ({ value, onChange, placeh
   const { t } = useTranslation();
   const [newTrait, setNewTrait] = useState('');
 
-  const backgroundColor = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'text');
-  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'text');
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'text');
-  const placeholderColor = useThemeColor({ light: '#a0a0a0', dark: '#6c6c6e' }, 'text');
-  const tagBackgroundColor = useThemeColor({ light: '#f0f0f0', dark: '#2c2c2e' }, 'text');
+  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'color');
+  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'color');
+  const placeholderColor = useThemeColor({ light: '#a0a0a0', dark: '#6c6c6e' }, 'color');
+  const tagBackgroundColor = useThemeColor({ light: '#f0f0f0', dark: '#2c2c2e' }, 'color');
 
   // Agregar un rasgo
   const addTrait = (trait: string) => {

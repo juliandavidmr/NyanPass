@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Stack, XStack, YStack, Button, Input, TextArea, Select, Switch } from 'tamagui';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ChevronLeft, Save, Calendar, Paperclip } from '@tamagui/lucide-icons';
+import { Calendar, ChevronLeft, Paperclip, Save } from '@tamagui/lucide-icons';
+import React, { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Button, Input, Select, Stack, Switch, TextArea, XStack, YStack } from 'tamagui';
+import { z } from 'zod';
 
+import { generateId, storageService } from '@/services/storage';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
-import { storageService } from '@/services/storage';
-import { generateId } from '@/services/storage';
 
 // Definir el esquema de validación con zod
 const treatmentSchema = z.object({
@@ -75,12 +74,12 @@ export default function TreatmentForm({ treatmentId, catId, onSave, onCancel }: 
             setValue('veterinarian', treatment.veterinarian || '');
             setValue('notes', treatment.notes || '');
             setStartDate(treatment.startDate);
-            
+
             if (treatment.endDate) {
               setEndDate(treatment.endDate);
               setHasEndDate(true);
             }
-            
+
             if (treatment.attachments) {
               setAttachments(treatment.attachments);
             }

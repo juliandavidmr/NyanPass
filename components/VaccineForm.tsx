@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Form, Input, Select, Spinner, Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
+
 import { useThemeColor } from '../hooks/useThemeColor';
 import { CatProfile, storageService, Vaccine } from '../services/storage';
 
@@ -26,9 +27,8 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
   const [showApplicationDatePicker, setShowApplicationDatePicker] = useState(false);
   const [showNextDoseDatePicker, setShowNextDoseDatePicker] = useState(false);
 
-  const backgroundColor = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'text');
-  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'text');
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'text');
+  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'color');
+  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'color');
 
   // Obtener el locale para date-fns según el idioma actual
   const getLocale = () => {
@@ -53,7 +53,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
 
   type FormData = z.infer<typeof formSchema>;
 
-  const { control, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<FormData>({
+  const { control, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -150,13 +150,13 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
   return (
     <ScrollView style={styles.container}>
       <Form onSubmit={handleSubmit(onSubmit)}>
-        <YStack space={15} padding={20}>
+        <YStack gap={15} padding={20}>
           <Text style={[styles.title, { color: textColor }]}>
             {vaccineId ? t('vaccine_form.title.edit') : t('vaccine_form.title.new')}
           </Text>
 
           {/* Nombre de la vacuna */}
-          <YStack space={5}>
+          <YStack gap={5}>
             <Text style={{ color: textColor }}>{t('vaccine_form.name')}</Text>
             <Controller
               control={control}
@@ -177,7 +177,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
           </YStack>
 
           {/* Selector de gato */}
-          <YStack space={5}>
+          <YStack gap={5}>
             <Text style={{ color: textColor }}>{t('vaccine_form.cat')}</Text>
             <Controller
               control={control}
@@ -191,8 +191,8 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
                     <Select.ScrollUpButton />
                     <Select.Viewport>
                       <Select.Group>
-                        {cats.map((cat) => (
-                          <Select.Item key={cat.id} value={cat.id}>
+                        {cats.map((cat, index) => (
+                          <Select.Item key={cat.id} index={index} value={cat.id}>
                             <Select.ItemText>{cat.name}</Select.ItemText>
                           </Select.Item>
                         ))}
@@ -209,7 +209,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
           </YStack>
 
           {/* Fecha de aplicación */}
-          <YStack space={5}>
+          <YStack gap={5}>
             <Text style={{ color: textColor }}>{t('vaccine_form.application_date')}</Text>
             <Controller
               control={control}
@@ -246,7 +246,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
           </YStack>
 
           {/* Fecha de próxima dosis */}
-          <YStack space={5}>
+          <YStack gap={5}>
             <Text style={{ color: textColor }}>{t('vaccine_form.next_dose_date')}</Text>
             <Controller
               control={control}
@@ -283,7 +283,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
           </YStack>
 
           {/* Notas */}
-          <YStack space={5}>
+          <YStack gap={5}>
             <Text style={{ color: textColor }}>{t('vaccine_form.notes')}</Text>
             <Controller
               control={control}
@@ -304,7 +304,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
           </YStack>
 
           {/* Botones */}
-          <XStack space={10} marginTop={20}>
+          <XStack gap={10} marginTop={20}>
             <Button flex={1} theme="gray" onPress={onCancel}>
               {t('general.cancel')}
             </Button>

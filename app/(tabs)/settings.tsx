@@ -1,13 +1,15 @@
 import { Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Switch } from 'tamagui';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import UserProfile from '@/components/UserProfile';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { storageService, Settings as StorageSettings } from '@/services/storage';
 
 // Tipos para las configuraciones
 type Language = 'es' | 'en' | 'fr' | 'pt';
@@ -24,7 +26,7 @@ type Settings = {
   offlineMode: boolean;
 };
 
-// Datos de ejemplo
+// Configuración inicial
 const initialSettings: Settings = {
   language: 'es',
   weightUnit: 'kg',
@@ -61,12 +63,49 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const colorScheme = useColorScheme() ?? 'light';
 
+  // Cargar configuraciones al iniciar
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const storedSettings = await storageService.getSettings();
+        setSettings({
+          language: storedSettings.language,
+          weightUnit: storedSettings.weightUnit,
+          lengthUnit: storedSettings.lengthUnit,
+          dateFormat: storedSettings.dateFormat,
+          darkMode: storedSettings.darkMode,
+          offlineMode: storedSettings.offlineMode,
+        });
+      } catch (error) {
+        console.error('Error al cargar configuraciones:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   // Función para actualizar una configuración
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings(prev => ({
-      ...prev,
+    const newSettings = {
+      ...settings,
       [key]: value,
-    }));
+    };
+
+    setSettings(newSettings);
+
+    // Guardar en Firebase
+    const storageSettings: StorageSettings = {
+      language: newSettings.language,
+      weightUnit: newSettings.weightUnit,
+      lengthUnit: newSettings.lengthUnit,
+      dateFormat: newSettings.dateFormat,
+      darkMode: newSettings.darkMode,
+      offlineMode: newSettings.offlineMode,
+    };
+
+    storageService.saveSettings(storageSettings).catch(error => {
+      console.error('Error al guardar configuraciones:', error);
+    });
   };
 
   // Renderizar un selector de opciones
@@ -75,7 +114,7 @@ export default function SettingsScreen() {
     options: { value: T; label: string }[],
     currentValue: T,
     onSelect: (value: T) => void,
-    icon: string
+    icon: any
   ) => (
     <ThemedView style={styles.settingSection}>
       <ThemedView style={styles.settingHeader}>
@@ -110,7 +149,7 @@ export default function SettingsScreen() {
     description: string,
     value: boolean,
     onToggle: () => void,
-    icon: string
+    icon: any
   ) => (
     <ThemedView style={styles.settingSection}>
       <ThemedView style={styles.toggleContainer}>
@@ -139,9 +178,14 @@ export default function SettingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Ajustes', headerShown: true }} />
+      <Stack.Screen options={{ title: 'Ajustes', headerShown: false }} />
 
       <ThemedText type="title" style={styles.screenTitle}>Ajustes</ThemedText>
+
+      {/* Perfil de usuario */}
+      <ThemedView style={styles.profileSection}>
+        <UserProfile />
+      </ThemedView>
 
       {renderSelector(
         'Idioma',
@@ -205,6 +249,11 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     marginBottom: 24,
+  },
+  profileSection: {
+    marginBottom: 24,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   settingSection: {
     marginBottom: 24,

@@ -6,8 +6,8 @@ import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Button, Text, XStack, YStack } from 'tamagui';
 
+import { convertWeight } from '../config/i18n';
 import { useThemeColor } from '../hooks/useThemeColor';
-import { convertWeight } from '../services/i18n';
 import { WeightUnit } from '../services/storage';
 
 interface WeightRecord {
