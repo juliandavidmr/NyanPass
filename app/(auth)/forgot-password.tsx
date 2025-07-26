@@ -1,23 +1,31 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import { Button, Input } from 'tamagui';
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+	Alert,
+	KeyboardAvoidingView,
+	Platform,
+	StyleSheet,
+	TouchableOpacity,
+} from "react-native";
+import { Button, Input } from "tamagui";
 
-import { ThemedText } from '../../components/ThemedText';
-import { ThemedView } from '../../components/ThemedView';
-import { authService } from '../../services/auth';
+import { ThemedText } from "../../components/ThemedText";
+import { ThemedView } from "../../components/ThemedView";
+import { authService } from "../../services/auth";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
+	const [resetSent, setResetSent] = useState(false);
+	const router = useRouter();
+	const { t } = useTranslation();
 
-  const handleResetPassword = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Por favor, ingresa tu email');
-      return;
-    }
+	const handleResetPassword = async () => {
+		if (!email) {
+			Alert.alert(t("general.error"), t("forgot.password.email.required"));
+			return;
+		}
 
     setIsLoading(true);
     try {
@@ -48,53 +56,53 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.header}>
-          <ThemedText style={styles.title}>Recuperar Contraseña</ThemedText>
-          <ThemedText style={styles.subtitle}>
-            {resetSent
-              ? 'Hemos enviado un correo con instrucciones para recuperar tu contraseña'
-              : 'Ingresa tu email para recibir instrucciones de recuperación'}
-          </ThemedText>
-        </ThemedView>
+			<ThemedView style={styles.container}>
+				<ThemedView style={styles.header}>
+					<ThemedText style={styles.title}>
+						{t("forgot.password.title")}
+					</ThemedText>
+					<ThemedText style={styles.subtitle}>
+						{resetSent
+							? t("forgot.password.description")
+							: t("forgot.password.description")}
+					</ThemedText>
+				</ThemedView>
 
-        <ThemedView style={styles.form}>
-          {!resetSent ? (
-            <>
-              <Input
-                placeholder="Email"
-                placeholderTextColor="#888"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+				<ThemedView style={styles.form}>
+					{!resetSent ? (
+						<>
+							<Input
+								placeholder={t("forgot.password.email")}
+								placeholderTextColor="#888"
+								value={email}
+								onChangeText={setEmail}
+								autoCapitalize="none"
+								keyboardType="email-address"
+							/>
 
-              <Button
-                onPress={handleResetPassword}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Enviando...' : 'Enviar Instrucciones'}
-              </Button>
-            </>
-          ) : (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleBackToLogin}
-            >
-              <ThemedText style={styles.buttonText}>Volver al Inicio de Sesión</ThemedText>
-            </TouchableOpacity>
-          )}
+							<Button onPress={handleResetPassword} disabled={isLoading}>
+								{isLoading
+									? t("general.loading")
+									: t("forgot.password.submit")}
+							</Button>
+						</>
+					) : (
+						<TouchableOpacity style={styles.button} onPress={handleBackToLogin}>
+							<ThemedText style={styles.buttonText}>
+								{t("forgot.password.back")}
+							</ThemedText>
+						</TouchableOpacity>
+					)}
 
-          {!resetSent && (
-            <TouchableOpacity onPress={handleBackToLogin}>
-              <ThemedText style={styles.linkText}>
-                Volver al Inicio de Sesión
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </ThemedView>
-      </ThemedView>
+					{!resetSent && (
+						<TouchableOpacity onPress={handleBackToLogin}>
+							<ThemedText style={styles.linkText}>
+								{t("forgot.password.back")}
+							</ThemedText>
+						</TouchableOpacity>
+					)}
+				</ThemedView>
+			</ThemedView>
     </KeyboardAvoidingView>
   );
 }

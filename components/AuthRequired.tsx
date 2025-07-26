@@ -1,59 +1,69 @@
-import { useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Link, useRouter } from "expo-router";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { StyleSheet, TouchableOpacity } from "react-native";
 
-import { authService } from '../services/auth';
-import { ThemedText } from './ThemedText';
-import { ThemedView } from './ThemedView';
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { authService } from "@/services/auth";
 
-type AuthRequiredProps = {
-  message?: string;
-};
+export default function AuthRequired() {
+	const { t } = useTranslation();
+	const router = useRouter();
 
-export default function AuthRequired({ message = 'Necesitas iniciar sesión para acceder a esta función' }: AuthRequiredProps) {
-  const router = useRouter();
-  const isAuthenticated = authService.isAuthenticated();
+	const handleLogin = () => {
+		router.push("/(auth)/login");
+	};
 
-  const handleLogin = () => {
-    router.push('/(auth)/login');
-  };
+	const handleRegister = () => {
+		router.push("/(auth)/register");
+	};
 
-  if (isAuthenticated) {
-    return null;
-  }
+	if (authService.isAuthenticated()) {
+		return null;
+	}
 
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText style={styles.message}>{message}</ThemedText>
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <ThemedText style={styles.buttonText}>Iniciar Sesión</ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
-  );
+	return (
+		<ThemedView style={styles.container}>
+			<ThemedText type="title">{t("auth.required.title")}</ThemedText>
+			<ThemedText style={styles.message}>
+				{t("auth.required.description")}
+			</ThemedText>
+			<TouchableOpacity style={styles.button} onPress={handleLogin}>
+				<ThemedText style={styles.buttonText}>{t("auth.required.login")}</ThemedText>
+			</TouchableOpacity>
+			<Link href="/(auth)/register" style={styles.link}>
+				<ThemedText type="link">{t("auth.required.register")}</ThemedText>
+			</Link>
+		</ThemedView>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    margin: 20,
-  },
-  message: {
-    textAlign: 'center',
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+	container: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		padding: 20,
+	},
+	message: {
+		textAlign: "center",
+		marginBottom: 20,
+		fontSize: 16,
+	},
+	button: {
+		backgroundColor: "#007AFF",
+		paddingVertical: 12,
+		paddingHorizontal: 30,
+		borderRadius: 8,
+		marginBottom: 20,
+	},
+	buttonText: {
+		color: "white",
+		fontWeight: "bold",
+		fontSize: 16,
+	},
+	link: {
+		marginTop: 15,
+	},
 });

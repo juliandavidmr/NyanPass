@@ -1,23 +1,31 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import { Button, Input } from 'tamagui';
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+	Alert,
+	KeyboardAvoidingView,
+	Platform,
+	StyleSheet,
+	TouchableOpacity,
+} from "react-native";
+import { Button, Input } from "tamagui";
 
-import { ThemedText } from '../../components/ThemedText';
-import { ThemedView } from '../../components/ThemedView';
-import { authService } from '../../services/auth';
+import { ThemedText } from "../../components/ThemedText";
+import { ThemedView } from "../../components/ThemedView";
+import { authService } from "../../services/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+	const [password, setPassword] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
+	const router = useRouter();
+	const { t } = useTranslation();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Por favor, completa todos los campos');
-      return;
-    }
+	const handleLogin = async () => {
+		if (!email || !password) {
+			Alert.alert(t("general.error"), t("login.error.missing_fields"));
+			return;
+		}
 
     setIsLoading(true);
     try {
@@ -54,48 +62,51 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.header}>
-          <ThemedText style={styles.title}>NyanPass</ThemedText>
-          <ThemedText style={styles.subtitle}>Gestiona la información de tus gatos</ThemedText>
-        </ThemedView>
+			<ThemedView style={styles.container}>
+				<ThemedView style={styles.header}>
+					<ThemedText style={styles.title}>{t("login.title")}</ThemedText>
+					<ThemedText style={styles.subtitle}>
+						{t("login.subtitle")}
+					</ThemedText>
+				</ThemedView>
 
-        <ThemedView style={styles.form}>
-          <Input
-            placeholder="Email"
-            placeholderTextColor="#888"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <Input
-            placeholder="Contraseña"
-            placeholderTextColor="#888"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+				<ThemedView style={styles.form}>
+					<Input
+						placeholder={t("login.email")}
+						placeholderTextColor="#888"
+						value={email}
+						onChangeText={setEmail}
+						autoCapitalize="none"
+						keyboardType="email-address"
+					/>
+					<Input
+						placeholder={t("login.password")}
+						placeholderTextColor="#888"
+						value={password}
+						onChangeText={setPassword}
+						secureTextEntry
+					/>
 
-          <Button
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </Button>
+					<Button onPress={handleLogin} disabled={isLoading}>
+						{isLoading ? t("general.loading") : t("login.submit")}
+					</Button>
 
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <ThemedText style={styles.linkText}>¿Olvidaste tu contraseña?</ThemedText>
-          </TouchableOpacity>
+					<TouchableOpacity onPress={handleForgotPassword}>
+						<ThemedText style={styles.linkText}>
+							{t("login.forgot.password")}
+						</ThemedText>
+					</TouchableOpacity>
 
-          <ThemedView style={styles.registerContainer}>
-            <ThemedText>¿No tienes una cuenta? </ThemedText>
-            <TouchableOpacity onPress={handleRegister}>
-              <ThemedText style={styles.linkText}>Regístrate</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+					<ThemedView style={styles.registerContainer}>
+						<ThemedText>{t("login.register.question")}</ThemedText>
+						<TouchableOpacity onPress={handleRegister}>
+							<ThemedText style={styles.linkText}>
+								{t("login.register.link")}
+							</ThemedText>
+						</TouchableOpacity>
+					</ThemedView>
+				</ThemedView>
+			</ThemedView>
     </KeyboardAvoidingView>
   );
 }

@@ -169,6 +169,53 @@ const resources = {
 			"general.success": "Éxito",
 			"general.loading": "Cargando...",
 			"general.no_data": "Sin datos",
+
+			// Auth Required
+			"auth.required.title": "Inicio de sesión requerido",
+			"auth.required.description":
+				"Debes iniciar sesión para acceder a esta pantalla.",
+			"auth.required.login": "Iniciar sesión",
+			"auth.required.register": "Registrarse",
+
+			// Breed Selector
+			"breed.selector.title": "Seleccionar Raza",
+			"breed.selector.search": "Buscar raza...",
+			"breed.selector.custom": "Otra raza",
+			"breed.selector.save": "Guardar",
+
+			// Not Found
+			"not.found.title": "Esta pantalla no existe.",
+			"not.found.description": "¡Vuelve a la pantalla de inicio!",
+
+			// Forgot Password
+			"forgot.password.title": "¿Olvidaste tu contraseña?",
+			"forgot.password.description":
+				"Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.",
+			"forgot.password.email": "Correo electrónico",
+			"forgot.password.submit": "Enviar",
+			"forgot.password.back": "Volver al inicio de sesión",
+
+			// Login
+			"login.title": "Iniciar sesión",
+			"login.email": "Correo electrónico",
+			"login.password": "Contraseña",
+			"login.submit": "Iniciar sesión",
+			"login.forgot.password": "¿Olvidaste tu contraseña?",
+			"login.register": "¿No tienes una cuenta? Regístrate",
+
+			// Register
+			"register.title": "Registrarse",
+			"register.email": "Correo electrónico",
+			"register.password": "Contraseña",
+			"register.confirm.password": "Confirmar contraseña",
+			"register.submit": "Registrarse",
+			"register.login": "¿Ya tienes una cuenta? Inicia sesión",
+
+			// User Profile
+			"user.profile.title": "Perfil de Usuario",
+			"user.profile.name": "Nombre",
+			"user.profile.email": "Correo electrónico",
+			"user.profile.logout": "Cerrar sesión",
 		},
 	},
 	en: {
@@ -335,6 +382,52 @@ const resources = {
 			"general.success": "Success",
 			"general.loading": "Loading...",
 			"general.no_data": "No data",
+
+			// Auth Required
+			"auth.required.title": "Login Required",
+			"auth.required.description": "You must be logged in to access this screen.",
+			"auth.required.login": "Login",
+			"auth.required.register": "Register",
+
+			// Breed Selector
+			"breed.selector.title": "Select Breed",
+			"breed.selector.search": "Search breed...",
+			"breed.selector.custom": "Other breed",
+			"breed.selector.save": "Save",
+
+			// Not Found
+			"not.found.title": "This screen does not exist.",
+			"not.found.description": "Go to home screen!",
+
+			// Forgot Password
+			"forgot.password.title": "Forgot Your Password?",
+			"forgot.password.description":
+				"Enter your email and we'll send you a link to reset your password.",
+			"forgot.password.email": "Email",
+			"forgot.password.submit": "Submit",
+			"forgot.password.back": "Back to login",
+
+			// Login
+			"login.title": "Login",
+			"login.email": "Email",
+			"login.password": "Password",
+			"login.submit": "Login",
+			"login.forgot.password": "Forgot your password?",
+			"login.register": "Don't have an account? Register",
+
+			// Register
+			"register.title": "Register",
+			"register.email": "Email",
+			"register.password": "Password",
+			"register.confirm.password": "Confirm password",
+			"register.submit": "Register",
+			"register.login": "Already have an account? Login",
+
+			// User Profile
+			"user.profile.title": "User Profile",
+			"user.profile.name": "Name",
+			"user.profile.email": "Email",
+			"user.profile.logout": "Logout",
 		},
 	},
 	fr: {

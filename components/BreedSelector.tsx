@@ -78,7 +78,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor }]}>
             <XStack justifyContent="space-between" alignItems="center" paddingHorizontal={15} paddingVertical={10}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>{t('cat_form.breed')}</Text>
+              <Text style={[styles.modalTitle, { color: textColor }]}>{t("breed.selector.title")}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <X size={24} color={textColor} />
               </TouchableOpacity>
@@ -88,7 +88,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
             <XStack padding={15} gap={10}>
               <Input
                 flex={1}
-                placeholder={t('cat_form.breed_placeholder')}
+                placeholder={t("breed.selector.search")}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -117,7 +117,7 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
                       style={[styles.breedItem, { borderBottomColor: borderColor }]}
                       onPress={showCustomBreedInput}
                     >
-                      <Text style={{ color: textColor }}>{t('cat_form.custom_breed')}</Text>
+                      <Text style={{ color: textColor }}>{t("breed.selector.custom")}</Text>
                     </TouchableOpacity>
                   }
                 />
@@ -125,16 +125,16 @@ const BreedSelector: React.FC<BreedSelectorProps> = ({ value, onChange, placehol
             ) : (
               <YStack padding={15} gap={15}>
                 <Input
-                  placeholder={t('cat_form.custom_breed')}
+                  placeholder={t("breed.selector.custom")}
                   value={customBreed}
                   onChangeText={setCustomBreed}
                   autoCapitalize="words"
                 />
                 <Button onPress={handleCustomBreed} theme="active">
-                  {t('general.save')}
+                  {t("breed.selector.save")}
                 </Button>
                 <Button onPress={() => setShowCustomInput(false)} theme="gray">
-                  {t('general.cancel')}
+                  {t("general.cancel")}
                 </Button>
               </YStack>
             )}

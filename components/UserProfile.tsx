@@ -1,72 +1,76 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { authService } from '../services/auth';
-import { ThemedView } from './ThemedView';
-import { ThemedText } from './ThemedText';
+import { useRouter } from "expo-router";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { Alert, StyleSheet, TouchableOpacity } from "react-native";
+
+import { authService } from "../services/auth";
+import { ThemedText } from "./ThemedText";
+import { ThemedView } from "./ThemedView";
 
 type UserProfileProps = {
   minimal?: boolean;
 };
 
 export default function UserProfile({ minimal = false }: UserProfileProps) {
-  const router = useRouter();
-  const userData = authService.getCurrentUserData();
+	const router = useRouter();
+	const userData = authService.getCurrentUserData();
+	const { t } = useTranslation();
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Cerrar Sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await authService.logout();
-              // La redirección se manejará automáticamente en _layout.tsx
-            } catch (error) {
-              Alert.alert('Error', 'No se pudo cerrar sesión');
-            }
-          },
-        },
-      ],
-    );
-  };
+	const handleLogout = async () => {
+		Alert.alert(
+			t("user.profile.logout"),
+			t("user.profile.logout_confirm"),
+			[
+				{
+					text: t("general.cancel"),
+					style: "cancel",
+				},
+				{
+					text: t("user.profile.logout"),
+					style: "destructive",
+					onPress: async () => {
+						try {
+							await authService.logout();
+							// La redirección se manejará automáticamente en _layout.tsx
+						} catch (error) {
+							Alert.alert(t("general.error"), t("user.profile.logout_error"));
+						}
+					},
+				},
+			]
+		);
+	};
 
   if (!userData) {
     return null;
   }
 
-  if (minimal) {
-    return (
-      <TouchableOpacity onPress={handleLogout}>
-        <ThemedText style={styles.logoutText}>Cerrar Sesión</ThemedText>
-      </TouchableOpacity>
-    );
-  }
+	if (minimal) {
+		return (
+			<TouchableOpacity onPress={handleLogout}>
+				<ThemedText style={styles.logoutText}>
+					{t("user.profile.logout")}
+				</ThemedText>
+			</TouchableOpacity>
+		);
+	}
 
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.userInfo}>
-        <ThemedText style={styles.userName}>
-          {userData.displayName || 'Usuario'}
-        </ThemedText>
-        <ThemedText style={styles.userEmail}>{userData.email}</ThemedText>
-      </ThemedView>
+	return (
+		<ThemedView style={styles.container}>
+			<ThemedView style={styles.userInfo}>
+				<ThemedText style={styles.userName}>
+					{userData.displayName || t("user.profile.anonymous")}
+				</ThemedText>
+				<ThemedText style={styles.userEmail}>{userData.email}</ThemedText>
+			</ThemedView>
 
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleLogout}
-      >
-        <ThemedText style={styles.logoutButtonText}>Cerrar Sesión</ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
-  );
+			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+				<ThemedText style={styles.logoutButtonText}>
+					{t("user.profile.logout")}
+				</ThemedText>
+			</TouchableOpacity>
+		</ThemedView>
+	);
 }
 
 const styles = StyleSheet.create({
