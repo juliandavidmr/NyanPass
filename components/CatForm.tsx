@@ -11,14 +11,15 @@ import { Button, Form, Input, ScrollView, Spinner, Text, View, XStack, YStack } 
 import { z } from 'zod';
 
 import { useThemeColor } from '../hooks/useThemeColor';
-import { CatProfile, storageService } from '../services/storage';
+import { CatProfileSchema, type TCatProfile } from '../services/models';
+import { storageService } from '../services/storage';
 import BreedSelector from './BreedSelector';
 import { ThemedView } from './ThemedView';
 import TraitsSelector from './TraitsSelector';
 
 interface CatFormProps {
   catId?: string;
-  onSave: (cat: CatProfile) => void;
+  onSave: (cat: TCatProfile) => void;
   onCancel: () => void;
 }
 
@@ -28,8 +29,8 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [traits, setTraits] = useState<string[]>([]);
 
-  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'text');
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'text');
+  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'color');
+  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#2c2c2e' }, 'color');
 
   // Obtener el locale para date-fns según el idioma actual
   const getLocale = () => {
@@ -56,7 +57,7 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
 
   type FormData = z.infer<typeof formSchema>;
 
-  const { control, handleSubmit, setValue, formState: { errors }, reset } = useForm<FormData>({
+  const { control, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -78,7 +79,7 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
             reset({
               name: cat.name,
               nickname: cat.nickname || '',
-              birthDate: cat.birthDate,
+              birthDate: cat.birthdate,
               breed: cat.breed,
               weight: cat.weightRecords.length > 0
                 ? cat.weightRecords[cat.weightRecords.length - 1].weight.toString()
@@ -111,17 +112,16 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
         unit: settings.weightUnit,
       };
 
-      const catProfile: CatProfile = {
+      const catProfile: TCatProfile = CatProfileSchema.parse({
         id: catId || `cat-${Date.now()}`,
         name: data.name,
         nickname: data.nickname || undefined,
-        birthDate: data.birthDate,
+        birthdate: data.birthDate,
         breed: data.breed,
         traits: traits,
         weightRecords: [weightRecord],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        weightUnit: 'kg',
+      } satisfies TCatProfile);
 
       // Si estamos editando, mantener los registros de peso anteriores
       if (catId) {
@@ -132,7 +132,6 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
             ...existingCat.weightRecords,
             weightRecord,
           ];
-          catProfile.createdAt = existingCat.createdAt;
         }
       }
 

@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { Button, Spinner, Stack, Text, View, XStack } from 'tamagui';
 
+import { ThemedText } from '@/components/ThemedText';
 import VaccineForm from '../../components/VaccineForm';
 import { formatDate } from '../../config/i18n';
-import Colors from '../../constants/Colors';
-import { CatProfile, storageService, Vaccine } from '../../services/storage';
+import { Colors } from '../../constants/Colors';
+import type { TCatProfile, TVaccine } from '../../services/models';
+import { storageService } from '../../services/storage';
 
 // Función para verificar si una vacuna está vencida o próxima
 const checkVaccineStatus = (nextDoseDate?: Date): { status: 'expired' | 'upcoming' | 'ok'; daysRemaining: number } => {
@@ -29,8 +31,8 @@ const checkVaccineStatus = (nextDoseDate?: Date): { status: 'expired' | 'upcomin
 export default function VaccinesScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
-  const [vaccines, setVaccines] = useState<Vaccine[]>([]);
-  const [cats, setCats] = useState<CatProfile[]>([]);
+  const [vaccines, setVaccines] = useState<TVaccine[]>([]);
+  const [cats, setCats] = useState<TCatProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedVaccineId, setSelectedVaccineId] = useState<string | undefined>(undefined);
@@ -105,13 +107,13 @@ export default function VaccinesScreen() {
   };
 
   // Manejar el guardado de una vacuna
-  const handleSaveVaccine = (vaccine: Vaccine) => {
+  const handleSaveVaccine = (vaccine: TVaccine) => {
     setShowForm(false);
     loadData();
   };
 
   // Renderizar una tarjeta de vacuna
-  const renderVaccineCard = ({ item }: { item: Vaccine }) => {
+  const renderVaccineCard = ({ item }: { item: TVaccine }) => {
     const vaccineStatus = checkVaccineStatus(item.nextDoseDate);
 
     // Determinar el color según el estado de la vacuna
@@ -131,31 +133,31 @@ export default function VaccinesScreen() {
         style={styles.vaccineCard}
         onPress={() => handleEditVaccine(item.id)}
       >
-        <View style={styles.vaccineCardContent}>
+        <View>
           <View style={styles.vaccineInfo}>
-            <Text type="title">{item.name}</Text>
-            <Text>Gato: {getCatName(item.catId)}</Text>
-            <Text>{t('vaccines.applied')}: {formatDate(item.applicationDate, 'DD/MM/YYYY')}</Text>
+            <ThemedText type="title">{item.name}</ThemedText>
+            <ThemedText>Gato: {getCatName(item.catId)}</ThemedText>
+            <ThemedText>{t('vaccines.applied')}: {formatDate(item.applicationDate, 'DD/MM/YYYY')}</ThemedText>
             {item.nextDoseDate && (
-              <Text>{t('vaccines.next_dose')}: {formatDate(item.nextDoseDate, 'DD/MM/YYYY')}</Text>
+              <ThemedText>{t('vaccines.next_dose')}: {formatDate(item.nextDoseDate, 'DD/MM/YYYY')}</ThemedText>
             )}
             {item.notes && (
-              <Text style={styles.notes}>{item.notes}</Text>
+              <ThemedText style={styles.notes}>{item.notes}</ThemedText>
             )}
           </View>
 
           {vaccineStatus.status !== 'ok' && (
-            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-              <Text style={styles.statusText}>{statusText}</Text>
+            <View style={[{ backgroundColor: statusColor }]}>
+              <ThemedText >{statusText}</ThemedText>
             </View>
           )}
 
           <XStack gap={10}>
             <TouchableOpacity onPress={() => handleEditVaccine(item.id)}>
-              <Edit3 size={20} color={Colors[colorScheme ?? 'light'].text} />
+              <Edit3 size={20} color={Colors[colorScheme ?? 'light'].color} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDeleteVaccine(item.id)}>
-              <Trash2 size={20} color={Colors[colorScheme ?? 'light'].text} />
+              <Trash2 size={20} color={Colors[colorScheme ?? 'light'].color} />
             </TouchableOpacity>
           </XStack>
         </View>
@@ -174,7 +176,7 @@ export default function VaccinesScreen() {
         </XStack>
 
         {loading ? (
-          <View style={styles.loadingContainer}>
+          <View >
             <Spinner size="large" />
           </View>
         ) : vaccines.length > 0 ? (
@@ -186,7 +188,7 @@ export default function VaccinesScreen() {
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Text>{t('vaccines.empty')}</Text>
+            <ThemedText>{t('vaccines.empty')}</ThemedText>
           </View>
         )}
       </Stack>

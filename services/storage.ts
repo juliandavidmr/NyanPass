@@ -1,3 +1,4 @@
+import { APP_LANGUAGES } from "@/constants/appLanguages";
 import {
 	collection,
 	deleteDoc,
@@ -7,9 +8,16 @@ import {
 	query,
 	setDoc,
 	where,
-	writeBatch,
 } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 import { firebaseAuth, firebaseDb } from "../config/firebase";
+import type {
+	TAllergy,
+	TCatProfile,
+	TSettings,
+	TTreatment,
+	TVaccine,
+} from "./models";
 
 // Colecciones de Firestore
 const COLLECTIONS = {
@@ -20,69 +28,9 @@ const COLLECTIONS = {
 	SETTINGS: "settings",
 };
 
-// Tipos de datos
-export type CatProfile = {
-	id: string;
-	name: string;
-	nickname?: string;
-	birthdate: Date;
-	breed: string;
-	weight: number;
-	weightUnit: "kg" | "lbs";
-	traits: string[];
-	image?: string;
-};
-
-export type Vaccine = {
-	id: string;
-	catId: string;
-	name: string;
-	applicationDate: Date;
-	nextDoseDate?: Date;
-	notes?: string;
-};
-
-export type Severity = "low" | "medium" | "high";
-
-export type Allergy = {
-	id: string;
-	catId: string;
-	name: string;
-	symptoms: string;
-	severity: Severity;
-	notes?: string;
-};
-
-export type Treatment = {
-	id: string;
-	catId: string;
-	name: string;
-	startDate: Date;
-	endDate?: Date;
-	dosage?: string;
-	frequency?: string;
-	notes?: string;
-	attachments?: string[];
-};
-
-export type Language = "es" | "en" | "fr" | "pt";
-export type WeightUnit = "kg" | "lbs";
-export type LengthUnit = "cm" | "in";
-export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY";
-
-export type Settings = {
-	id?: string;
-	language: Language;
-	weightUnit: WeightUnit;
-	lengthUnit: LengthUnit;
-	dateFormat: DateFormat;
-	darkMode: boolean;
-	offlineMode: boolean;
-};
-
 // Función para generar un ID único
 export const generateId = (): string => {
-	return Date.now().toString(36) + Math.random().toString(36).substring(2);
+	return uuidv4();
 };
 
 // Funciones para convertir fechas a objetos Date
@@ -124,17 +72,17 @@ class StorageService {
 	}
 
 	// Gatos
-	async getCats(): Promise<CatProfile[]> {
+	async getCats(): Promise<TCatProfile[]> {
 		try {
 			const userId = this.getUserId();
 			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
 			const q = query(catsRef, where("userId", "==", userId));
 			const querySnapshot = await getDocs(q);
 
-			const cats: CatProfile[] = [];
+			const cats: TCatProfile[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				cats.push(convertDates(data) as CatProfile);
+				cats.push(convertDates(data) as TCatProfile);
 			});
 
 			return cats;
@@ -144,40 +92,14 @@ class StorageService {
 		}
 	}
 
-	async saveCats(cats: CatProfile[]): Promise<void> {
-		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Primero eliminamos todos los gatos existentes del usuario
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const q = query(catsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
-
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.CATS, document.id));
-			});
-
-			// Luego añadimos los nuevos gatos
-			cats.forEach((cat) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.CATS, cat.id);
-				batch.set(docRef, { ...cat, userId });
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al guardar gatos:", error);
-		}
-	}
-
-	async getCat(catId: string): Promise<CatProfile | undefined> {
+	async getCat(catId: string): Promise<TCatProfile | undefined> {
 		try {
 			const docRef = doc(firebaseDb, COLLECTIONS.CATS, catId);
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
 				const data = docSnap.data();
-				return convertDates(data) as CatProfile;
+				return convertDates(data) as TCatProfile;
 			}
 
 			return undefined;
@@ -187,10 +109,10 @@ class StorageService {
 		}
 	}
 
-	async addCat(cat: Omit<CatProfile, "id">): Promise<CatProfile> {
+	async addCat(cat: Omit<TCatProfile, "id">): Promise<TCatProfile> {
 		try {
 			const userId = this.getUserId();
-			const newCat: CatProfile = {
+			const newCat: TCatProfile = {
 				...cat,
 				id: generateId(),
 			};
@@ -205,7 +127,7 @@ class StorageService {
 		}
 	}
 
-	async updateCat(cat: CatProfile): Promise<void> {
+	async updateCat(cat: TCatProfile): Promise<void> {
 		try {
 			const userId = this.getUserId();
 			const docRef = doc(firebaseDb, COLLECTIONS.CATS, cat.id);
@@ -216,57 +138,18 @@ class StorageService {
 		}
 	}
 
-	async deleteCat(catId: string): Promise<void> {
-		try {
-			const batch = writeBatch(firebaseDb);
-
-			// Eliminar el gato
-			const catRef = doc(firebaseDb, COLLECTIONS.CATS, catId);
-			batch.delete(catRef);
-
-			// Eliminar vacunas asociadas
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const vaccinesQuery = query(vaccinesRef, where("catId", "==", catId));
-			const vaccinesSnapshot = await getDocs(vaccinesQuery);
-			vaccinesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Eliminar alergias asociadas
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const allergiesQuery = query(allergiesRef, where("catId", "==", catId));
-			const allergiesSnapshot = await getDocs(allergiesQuery);
-			allergiesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Eliminar tratamientos asociados
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const treatmentsQuery = query(treatmentsRef, where("catId", "==", catId));
-			const treatmentsSnapshot = await getDocs(treatmentsQuery);
-			treatmentsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al eliminar gato:", error);
-			throw error;
-		}
-	}
-
 	// Vacunas
-	async getVaccines(): Promise<Vaccine[]> {
+	async getVaccines(): Promise<TVaccine[]> {
 		try {
 			const userId = this.getUserId();
 			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
 			const q = query(vaccinesRef, where("userId", "==", userId));
 			const querySnapshot = await getDocs(q);
 
-			const vaccines: Vaccine[] = [];
+			const vaccines: TVaccine[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				vaccines.push(convertDates(data) as Vaccine);
+				vaccines.push(convertDates(data) as TVaccine);
 			});
 
 			return vaccines;
@@ -276,36 +159,10 @@ class StorageService {
 		}
 	}
 
-	async saveVaccines(vaccines: Vaccine[]): Promise<void> {
+	async addVaccine(vaccine: Omit<TVaccine, "id">): Promise<TVaccine> {
 		try {
 			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Primero eliminamos todas las vacunas existentes del usuario
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const q = query(vaccinesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
-
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Luego añadimos las nuevas vacunas
-			vaccines.forEach((vaccine) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccine.id);
-				batch.set(docRef, { ...vaccine, userId });
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al guardar vacunas:", error);
-		}
-	}
-
-	async addVaccine(vaccine: Omit<Vaccine, "id">): Promise<Vaccine> {
-		try {
-			const userId = this.getUserId();
-			const newVaccine: Vaccine = {
+			const newVaccine: TVaccine = {
 				...vaccine,
 				id: generateId(),
 			};
@@ -320,7 +177,7 @@ class StorageService {
 		}
 	}
 
-	async updateVaccine(vaccine: Vaccine): Promise<void> {
+	async updateVaccine(vaccine: TVaccine): Promise<void> {
 		try {
 			const userId = this.getUserId();
 			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccine.id);
@@ -341,18 +198,35 @@ class StorageService {
 		}
 	}
 
+	async getVaccine(vaccineId: string): Promise<TVaccine | undefined> {
+		try {
+			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccineId);
+			const docSnap = await getDoc(docRef);
+
+			if (docSnap.exists()) {
+				const data = docSnap.data();
+				return convertDates(data) as TVaccine;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener vacuna:", error);
+			return undefined;
+		}
+	}
+
 	// Alergias
-	async getAllergies(): Promise<Allergy[]> {
+	async getAllergies(): Promise<TAllergy[]> {
 		try {
 			const userId = this.getUserId();
 			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
 			const q = query(allergiesRef, where("userId", "==", userId));
 			const querySnapshot = await getDocs(q);
 
-			const allergies: Allergy[] = [];
+			const allergies: TAllergy[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				allergies.push(convertDates(data) as Allergy);
+				allergies.push(convertDates(data) as TAllergy);
 			});
 
 			return allergies;
@@ -362,36 +236,10 @@ class StorageService {
 		}
 	}
 
-	async saveAllergies(allergies: Allergy[]): Promise<void> {
+	async addAllergy(allergy: Omit<TAllergy, "id">): Promise<TAllergy> {
 		try {
 			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Primero eliminamos todas las alergias existentes del usuario
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const q = query(allergiesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
-
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Luego añadimos las nuevas alergias
-			allergies.forEach((allergy) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergy.id);
-				batch.set(docRef, { ...allergy, userId });
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al guardar alergias:", error);
-		}
-	}
-
-	async addAllergy(allergy: Omit<Allergy, "id">): Promise<Allergy> {
-		try {
-			const userId = this.getUserId();
-			const newAllergy: Allergy = {
+			const newAllergy: TAllergy = {
 				...allergy,
 				id: generateId(),
 			};
@@ -406,7 +254,7 @@ class StorageService {
 		}
 	}
 
-	async updateAllergy(allergy: Allergy): Promise<void> {
+	async updateAllergy(allergy: TAllergy): Promise<void> {
 		try {
 			const userId = this.getUserId();
 			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergy.id);
@@ -427,18 +275,34 @@ class StorageService {
 		}
 	}
 
+	async getAllergy(allergyId: string): Promise<TAllergy | undefined> {
+		try {
+			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergyId);
+			const docSnap = await getDoc(docRef);
+
+			if (docSnap.exists()) {
+				return docSnap.data() as TAllergy;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener alergia:", error);
+			return undefined;
+		}
+	}
+
 	// Tratamientos
-	async getTreatments(): Promise<Treatment[]> {
+	async getTreatments(): Promise<TTreatment[]> {
 		try {
 			const userId = this.getUserId();
 			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
 			const q = query(treatmentsRef, where("userId", "==", userId));
 			const querySnapshot = await getDocs(q);
 
-			const treatments: Treatment[] = [];
+			const treatments: TTreatment[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				treatments.push(convertDates(data) as Treatment);
+				treatments.push(convertDates(data) as TTreatment);
 			});
 
 			return treatments;
@@ -448,36 +312,10 @@ class StorageService {
 		}
 	}
 
-	async saveTreatments(treatments: Treatment[]): Promise<void> {
+	async addTreatment(treatment: Omit<TTreatment, "id">): Promise<TTreatment> {
 		try {
 			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Primero eliminamos todos los tratamientos existentes del usuario
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const q = query(treatmentsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
-
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			// Luego añadimos los nuevos tratamientos
-			treatments.forEach((treatment) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatment.id);
-				batch.set(docRef, { ...treatment, userId });
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al guardar tratamientos:", error);
-		}
-	}
-
-	async addTreatment(treatment: Omit<Treatment, "id">): Promise<Treatment> {
-		try {
-			const userId = this.getUserId();
-			const newTreatment: Treatment = {
+			const newTreatment: TTreatment = {
 				...treatment,
 				id: generateId(),
 			};
@@ -492,7 +330,7 @@ class StorageService {
 		}
 	}
 
-	async updateTreatment(treatment: Treatment): Promise<void> {
+	async updateTreatment(treatment: TTreatment): Promise<void> {
 		try {
 			const userId = this.getUserId();
 			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatment.id);
@@ -513,21 +351,37 @@ class StorageService {
 		}
 	}
 
+	async getTreatment(treatmentId: string): Promise<TTreatment | undefined> {
+		try {
+			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatmentId);
+			const docSnap = await getDoc(docRef);
+
+			if (docSnap.exists()) {
+				return docSnap.data() as TTreatment;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener tratamiento:", error);
+			return undefined;
+		}
+	}
+
 	// Configuraciones
-	async getSettings(): Promise<Settings> {
+	async getSettings(): Promise<TSettings> {
 		try {
 			const userId = this.getUserId();
 			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
 			const docSnap = await getDoc(settingsRef);
 
 			if (docSnap.exists()) {
-				return docSnap.data() as Settings;
+				return docSnap.data() as TSettings;
 			}
 
 			// Valores por defecto
 			return {
 				id: userId,
-				language: "es",
+				language: APP_LANGUAGES.ES,
 				weightUnit: "kg",
 				lengthUnit: "cm",
 				dateFormat: "DD/MM/YYYY",
@@ -538,7 +392,7 @@ class StorageService {
 			console.error("Error al obtener configuraciones:", error);
 			// Valores por defecto en caso de error
 			return {
-				language: "es",
+				language: APP_LANGUAGES.EN,
 				weightUnit: "kg",
 				lengthUnit: "cm",
 				dateFormat: "DD/MM/YYYY",
@@ -548,7 +402,7 @@ class StorageService {
 		}
 	}
 
-	async saveSettings(settings: Settings): Promise<void> {
+	async saveSettings(settings: TSettings): Promise<void> {
 		try {
 			const userId = this.getUserId();
 			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
@@ -557,58 +411,6 @@ class StorageService {
 			console.error("Error al guardar configuraciones:", error);
 		}
 	}
-
-	// Utilidades
-	async clearAllData(): Promise<void> {
-		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Eliminar todos los gatos del usuario
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const catsQuery = query(catsRef, where("userId", "==", userId));
-			const catsSnapshot = await getDocs(catsQuery);
-			catsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.CATS, document.id));
-			});
-
-			// Eliminar todas las vacunas del usuario
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const vaccinesQuery = query(vaccinesRef, where("userId", "==", userId));
-			const vaccinesSnapshot = await getDocs(vaccinesQuery);
-			vaccinesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Eliminar todas las alergias del usuario
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const allergiesQuery = query(allergiesRef, where("userId", "==", userId));
-			const allergiesSnapshot = await getDocs(allergiesQuery);
-			allergiesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Eliminar todos los tratamientos del usuario
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const treatmentsQuery = query(
-				treatmentsRef,
-				where("userId", "==", userId)
-			);
-			const treatmentsSnapshot = await getDocs(treatmentsQuery);
-			treatmentsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			// Eliminar configuraciones del usuario
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
-			batch.delete(settingsRef);
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al limpiar todos los datos:", error);
-		}
-	}
 }
 
-// Exportar una instancia única del servicio
 export const storageService = new StorageService();

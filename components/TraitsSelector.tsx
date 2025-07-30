@@ -1,8 +1,8 @@
 import { Plus, X } from '@tamagui/lucide-icons';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Button, Input, Text, XStack, YStack } from 'tamagui';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Button, Input, ScrollView, Text, View, XStack, YStack } from 'tamagui';
 
 import { useThemeColor } from '../hooks/useThemeColor';
 

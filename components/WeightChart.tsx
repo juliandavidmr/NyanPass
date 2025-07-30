@@ -5,31 +5,32 @@ import { useTranslation } from 'react-i18next';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Button, Text, XStack, YStack } from 'tamagui';
+import type { z } from 'zod';
 
 import { convertWeight } from '../config/i18n';
 import { useThemeColor } from '../hooks/useThemeColor';
-import { WeightUnit } from '../services/storage';
+import { CatWeightUnit } from '../services/models';
 
 interface WeightRecord {
   date: Date;
   weight: number;
-  unit: WeightUnit;
+  unit: z.infer<typeof CatWeightUnit>;
 }
 
 interface WeightChartProps {
   catId: string;
   weightRecords: WeightRecord[];
-  preferredUnit: WeightUnit;
+  preferredUnit: z.infer<typeof CatWeightUnit>;
 }
 
 const WeightChart: React.FC<WeightChartProps> = ({ catId, weightRecords, preferredUnit }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [timeRange, setTimeRange] = useState<'1m' | '3m' | '6m' | '1y' | 'all'>('all');
 
-  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'text');
-  const chartBackgroundColor = useThemeColor({ light: '#f5f5f5', dark: '#2c2c2e' });
-  const chartColor = useThemeColor({ light: '#5e72e4', dark: '#7f8eff' });
-  const chartPointColor = useThemeColor({ light: '#5e72e4', dark: '#7f8eff' });
+  const textColor = useThemeColor({ light: '#000', dark: '#fff' }, 'color');
+  const chartBackgroundColor = useThemeColor({ light: '#f5f5f5', dark: '#2c2c2e' }, 'background');
+  const chartColor = useThemeColor({ light: '#5e72e4', dark: '#7f8eff' }, 'color');
+  const chartPointColor = useThemeColor({ light: '#5e72e4', dark: '#7f8eff' }, 'color');
 
   // Obtener el locale para date-fns según el idioma actual
   const getLocale = () => {
@@ -164,8 +165,8 @@ const WeightChart: React.FC<WeightChartProps> = ({ catId, weightRecords, preferr
             backgroundGradientFrom: chartBackgroundColor,
             backgroundGradientTo: chartBackgroundColor,
             decimalPlaces: 1,
-            color: (opacity = 1) => chartColor,
-            labelColor: (opacity = 1) => textColor,
+            color: () => chartColor,
+            labelColor: () => textColor,
             style: {
               borderRadius: 16,
             },

@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, StyleSheet, TouchableOpacity } from "react-native";
@@ -8,11 +7,10 @@ import { ThemedText } from "./ThemedText";
 import { ThemedView } from "./ThemedView";
 
 type UserProfileProps = {
-  minimal?: boolean;
+	minimal?: boolean;
 };
 
 export default function UserProfile({ minimal = false }: UserProfileProps) {
-	const router = useRouter();
 	const userData = authService.getCurrentUserData();
 	const { t } = useTranslation();
 
@@ -41,9 +39,9 @@ export default function UserProfile({ minimal = false }: UserProfileProps) {
 		);
 	};
 
-  if (!userData) {
-    return null;
-  }
+	if (!userData) {
+		return null;
+	}
 
 	if (minimal) {
 		return (
@@ -74,34 +72,34 @@ export default function UserProfile({ minimal = false }: UserProfileProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  userInfo: {
-    marginBottom: 15,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  userEmail: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  logoutText: {
-    color: '#FF3B30',
-  },
+	container: {
+		padding: 15,
+		borderRadius: 10,
+		marginBottom: 20,
+	},
+	userInfo: {
+		marginBottom: 15,
+	},
+	userName: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		marginBottom: 5,
+	},
+	userEmail: {
+		fontSize: 14,
+		opacity: 0.7,
+	},
+	logoutButton: {
+		backgroundColor: '#FF3B30',
+		padding: 10,
+		borderRadius: 5,
+		alignItems: 'center',
+	},
+	logoutButtonText: {
+		color: 'white',
+		fontWeight: 'bold',
+	},
+	logoutText: {
+		color: '#FF3B30',
+	},
 });

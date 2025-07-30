@@ -4,10 +4,11 @@ import { Calendar, ChevronLeft, Paperclip, Save } from '@tamagui/lucide-icons';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
-import { Button, Input, Select, Stack, Switch, TextArea, XStack, YStack } from 'tamagui';
+import { Alert, StyleSheet } from 'react-native';
+import { Button, Input, ScrollView, Select, Stack, Switch, TextArea, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
+import type { TCatProfile } from '@/services/models';
 import { generateId, storageService } from '@/services/storage';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
@@ -33,7 +34,7 @@ type TreatmentFormProps = {
 
 export default function TreatmentForm({ treatmentId, catId, onSave, onCancel }: TreatmentFormProps) {
   const { t } = useTranslation();
-  const [cats, setCats] = useState<any[]>([]);
+  const [cats, setCats] = useState<TCatProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -43,7 +44,7 @@ export default function TreatmentForm({ treatmentId, catId, onSave, onCancel }: 
   const [attachments, setAttachments] = useState<string[]>([]);
 
   // Configurar el formulario con react-hook-form y zod
-  const { control, handleSubmit, setValue, formState: { errors }, reset } = useForm<TreatmentFormData>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<TreatmentFormData>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
       name: '',
@@ -200,8 +201,8 @@ export default function TreatmentForm({ treatmentId, catId, onSave, onCancel }: 
                       <Select.ScrollUpButton />
                       <Select.Viewport>
                         <Select.Group>
-                          {cats.map((cat) => (
-                            <Select.Item key={cat.id} value={cat.id}>
+                          {cats.map((cat, index) => (
+                            <Select.Item key={cat.id} index={index} value={cat.id}>
                               <Select.ItemText>{cat.name}</Select.ItemText>
                             </Select.Item>
                           ))}

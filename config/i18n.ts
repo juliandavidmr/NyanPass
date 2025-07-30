@@ -1,9 +1,21 @@
-import i18next from "i18next";
+import {
+	changeLanguage as i18nextChangeLanguage,
+	use as i18nextUse,
+} from "i18next";
 import { initReactI18next } from "react-i18next";
+
+import { APP_LANGUAGES } from "@/constants/appLanguages";
+
 import { storageService } from "../services/storage";
 
+type ResourcesType = {
+	[language in APP_LANGUAGES]: {
+		translation: Record<string, string | string[]>;
+	};
+};
+
 // Definir los recursos de traducción
-const resources = {
+const resources: ResourcesType = {
 	es: {
 		translation: {
 			// Navegación
@@ -385,7 +397,8 @@ const resources = {
 
 			// Auth Required
 			"auth.required.title": "Login Required",
-			"auth.required.description": "You must be logged in to access this screen.",
+			"auth.required.description":
+				"You must be logged in to access this screen.",
 			"auth.required.login": "Login",
 			"auth.required.register": "Register",
 
@@ -547,10 +560,10 @@ const initI18n = async () => {
 	// Obtener la configuración guardada
 	const settings = await storageService.getSettings();
 
-	await i18next.use(initReactI18next).init({
+	await i18nextUse(initReactI18next).init({
 		resources,
 		lng: settings.language,
-		fallbackLng: "es",
+		fallbackLng: APP_LANGUAGES.ES,
 		interpolation: {
 			escapeValue: false,
 		},
@@ -558,14 +571,14 @@ const initI18n = async () => {
 };
 
 // Función para cambiar el idioma
-const changeLanguage = async (language: string) => {
-	await i18next.changeLanguage(language);
+const changeLanguage = async (language: APP_LANGUAGES) => {
+	await i18nextChangeLanguage(language);
 
 	// Actualizar la configuración guardada
 	const settings = await storageService.getSettings();
 	await storageService.saveSettings({
 		...settings,
-		language: language as any,
+		language: language,
 	});
 };
 

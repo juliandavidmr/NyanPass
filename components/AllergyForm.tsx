@@ -8,17 +8,18 @@ import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { Button, Input, Select, Stack, TextArea, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
+import { AllergySchema, SeveritySchema } from '@/services/models';
 import { generateId, storageService } from '@/services/storage';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
 // Definir el esquema de validación con zod
-const allergySchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  catId: z.string().min(1, 'Selecciona un gato'),
-  symptoms: z.string().min(1, 'Los síntomas son requeridos'),
-  severity: z.enum(['low', 'medium', 'high']),
-  notes: z.string().optional(),
+const allergySchema = AllergySchema.pick({
+  name: true,
+  catId: true,
+  symptoms: true,
+  severity: true,
+  notes: true,
 });
 
 type AllergyFormData = z.infer<typeof allergySchema>;
@@ -38,7 +39,7 @@ export default function AllergyForm({ allergyId, catId, onSave, onCancel }: Alle
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Configurar el formulario con react-hook-form y zod
-  const { control, handleSubmit, setValue, formState: { errors }, reset } = useForm<AllergyFormData>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<AllergyFormData>({
     resolver: zodResolver(allergySchema),
     defaultValues: {
       name: '',
@@ -113,8 +114,8 @@ export default function AllergyForm({ allergyId, catId, onSave, onCancel }: Alle
 
   return (
     <ThemedView style={styles.container}>
-      <Stack padding={16} space={4}>
-        <XStack alignItems="center" space={8} marginBottom={16}>
+      <Stack padding={16} gap={4}>
+        <XStack alignItems="center" gap={8} marginBottom={16}>
           <Button icon={<ChevronLeft size={24} />} onPress={onCancel} unstyled />
           <ThemedText type="title">
             {allergyId ? t('medical.edit_allergy') : t('medical.add_allergy')}
@@ -122,7 +123,7 @@ export default function AllergyForm({ allergyId, catId, onSave, onCancel }: Alle
         </XStack>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack space={16} paddingBottom={100}>
+          <YStack gap={16} paddingBottom={100}>
             {/* Selector de gato */}
             <YStack>
               <ThemedText type="defaultSemiBold" marginBottom={4}>
@@ -144,8 +145,8 @@ export default function AllergyForm({ allergyId, catId, onSave, onCancel }: Alle
                       <Select.ScrollUpButton />
                       <Select.Viewport>
                         <Select.Group>
-                          {cats.map((cat) => (
-                            <Select.Item key={cat.id} value={cat.id}>
+                          {cats.map((cat, index) => (
+                            <Select.Item key={cat.id} index={index} value={cat.id}>
                               <Select.ItemText>{cat.name}</Select.ItemText>
                             </Select.Item>
                           ))}
@@ -250,13 +251,13 @@ export default function AllergyForm({ allergyId, catId, onSave, onCancel }: Alle
                       <Select.ScrollUpButton />
                       <Select.Viewport>
                         <Select.Group>
-                          <Select.Item value="low">
+                          <Select.Item index={0} value={SeveritySchema.enum.low}>
                             <Select.ItemText>{t('medical.severity.low')}</Select.ItemText>
                           </Select.Item>
-                          <Select.Item value="medium">
+                          <Select.Item index={1} value={SeveritySchema.enum.medium}>
                             <Select.ItemText>{t('medical.severity.medium')}</Select.ItemText>
                           </Select.Item>
-                          <Select.Item value="high">
+                          <Select.Item index={2} value={SeveritySchema.enum.high}>
                             <Select.ItemText>{t('medical.severity.high')}</Select.ItemText>
                           </Select.Item>
                         </Select.Group>
