@@ -11,19 +11,20 @@ import { Button, Form, Input, Select, Spinner, Text, XStack, YStack } from 'tama
 import { z } from 'zod';
 
 import { useThemeColor } from '../hooks/useThemeColor';
-import { CatProfile, storageService, Vaccine } from '../services/storage';
+import { VaccineSchema, type TCatProfile, type TVaccine } from '../services/models';
+import { generateId, storageService } from '../services/storage';
 
 interface VaccineFormProps {
   vaccineId?: string;
   catId?: string;
-  onSave: (vaccine: Vaccine) => void;
+  onSave: (vaccine: TVaccine) => void;
   onCancel: () => void;
 }
 
 const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onCancel }) => {
   const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [cats, setCats] = useState<CatProfile[]>([]);
+  const [cats, setCats] = useState<TCatProfile[]>([]);
   const [showApplicationDatePicker, setShowApplicationDatePicker] = useState(false);
   const [showNextDoseDatePicker, setShowNextDoseDatePicker] = useState(false);
 
@@ -109,16 +110,14 @@ const VaccineForm: React.FC<VaccineFormProps> = ({ vaccineId, catId, onSave, onC
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const vaccine: Vaccine = {
-        id: vaccineId || `vaccine-${Date.now()}`,
+      const vaccine: TVaccine = VaccineSchema.parse({
+        id: vaccineId || generateId(),
         name: data.name,
         catId: data.catId,
         applicationDate: data.applicationDate,
         nextDoseDate: data.nextDoseDate,
-        notes: data.notes || undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        notes: data.notes,
+      } satisfies TVaccine);
 
       // Guardar la vacuna
       if (vaccineId) {

@@ -15,10 +15,6 @@ export default function AuthRequired() {
 		router.push("/(auth)/login");
 	};
 
-	const handleRegister = () => {
-		router.push("/(auth)/register");
-	};
-
 	if (authService.isAuthenticated()) {
 		return null;
 	}

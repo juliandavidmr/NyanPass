@@ -3,8 +3,9 @@ import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import { Button, Spinner, Tabs, Text, View } from 'tamagui';
+import { Button, Spinner, Tabs, View } from 'tamagui';
 
+import { ThemedText } from '@/components/ThemedText';
 import AllergyForm from '../../components/AllergyForm';
 import { ThemedView } from '../../components/ThemedView';
 import TreatmentForm from '../../components/TreatmentForm';
@@ -13,6 +14,7 @@ import { formatDate } from '../../config/i18n';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { storageService } from '../../services/storage';
+import type { TAllergy, TTreatment } from '../../services/models';
 
 // Tipos para el historial médico
 type Severity = 'low' | 'medium' | 'high';
@@ -66,8 +68,8 @@ export default function MedicalScreen() {
     setLoading(true);
     try {
       const [allAllergies, allTreatments, allCats] = await Promise.all([
-        storageService.getAllergies(),
-        storageService.getTreatments(),
+        storageService.getAllAllergies(),
+        storageService.getAllTreatments(),
         storageService.getCats()
       ]);
       setAllergies(allAllergies);
@@ -133,7 +135,7 @@ export default function MedicalScreen() {
   };
 
   // Manejar la eliminación de una alergia
-  const handleDeleteAllergy = async (allergyId: string) => {
+  const handleDeleteAllergy = async (allergy: TAllergy) => {
     Alert.alert(
       t('general.delete'),
       t('medical.delete_allergy_confirm'),
@@ -147,7 +149,7 @@ export default function MedicalScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.deleteAllergy(allergyId);
+              await storageService.deleteAllergy(allergy.catId, allergy.id);
               loadData();
             } catch (error) {
               console.error('Error deleting allergy:', error);
@@ -173,7 +175,7 @@ export default function MedicalScreen() {
   };
 
   // Manejar la eliminación de un tratamiento
-  const handleDeleteTreatment = async (treatmentId: string) => {
+  const handleDeleteTreatment = async (treatment: TTreatment) => {
     Alert.alert(
       t('general.delete'),
       t('medical.delete_treatment_confirm'),
@@ -187,7 +189,7 @@ export default function MedicalScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.deleteTreatment(treatmentId);
+              await storageService.deleteTreatment(treatment.catId, treatment.id);
               loadData();
             } catch (error) {
               console.error('Error deleting treatment:', error);
@@ -226,30 +228,30 @@ export default function MedicalScreen() {
 
           <View style={styles.medicalInfo}>
             <View style={styles.headerRow}>
-              <Text type="defaultSemiBold" style={styles.medicalName}>
+              <ThemedText type="defaultSemiBold" style={styles.medicalName}>
                 {t('medical.allergy')}: {item.name}
-              </Text>
+              </ThemedText>
               <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(item.severity) }]}>
-                <Text style={styles.severityText}>{t(`medical.severity.${item.severity}`)}</Text>
+                <ThemedText style={styles.severityText}>{t(`medical.severity.${item.severity}`)}</ThemedText>
               </View>
             </View>
 
-            <Text>
+            <ThemedText>
               {t('medical.symptoms')}: {item.symptoms}
-            </Text>
+            </ThemedText>
 
-            <Text>
+            <ThemedText>
               {t('medical.cat')}: {getCatName(item.catId)}
-            </Text>
+            </ThemedText>
 
-            <Text>
+            <ThemedText>
               {t('medical.diagnosis_date')}: {formatDate(item.diagnosisDate)}
-            </Text>
+            </ThemedText>
 
             {item.notes && (
-              <Text style={styles.notes}>
+              <ThemedText style={styles.notes}>
                 {item.notes}
-              </Text>
+              </ThemedText>
             )}
 
             <View style={styles.actionButtons}>
@@ -276,67 +278,67 @@ export default function MedicalScreen() {
           <View style={styles.iconContainer}>
             <Pill
               size={24}
-              color={isOngoing ? Colors[colorScheme].tint : Colors[colorScheme].icon}
+              color={isOngoing ? Colors[colorScheme!].tint : Colors[colorScheme!].icon}
             />
           </View>
 
           <View style={styles.medicalInfo}>
             <View style={styles.headerRow}>
-              <Text type="defaultSemiBold" style={styles.medicalName}>
+              <ThemedText type="defaultSemiBold" style={styles.medicalName}>
                 {t('medical.treatment')}: {item.name}
-              </Text>
+              </ThemedText>
               {isOngoing && (
                 <View style={styles.ongoingBadge}>
-                  <Text style={styles.ongoingText}>{t('medical.ongoing')}</Text>
+                  <ThemedText style={styles.ongoingText}>{t('medical.ongoing')}</ThemedText>
                 </View>
               )}
             </View>
 
-            <Text>
+            <ThemedText>
               {t('medical.cat')}: {getCatName(item.catId)}
-            </Text>
+            </ThemedText>
 
-            <Text>
+            <ThemedText>
               {t('medical.start_date')}: {formatDate(item.startDate)}
               {item.endDate && ` • ${t('medical.end_date')}: ${formatDate(item.endDate)}`}
-            </Text>
+            </ThemedText>
 
             {(item.dosage || item.frequency) && (
-              <Text>
+              <ThemedText>
                 {item.dosage && `${t('medical.dosage')}: ${item.dosage}`}
                 {item.dosage && item.frequency && ' • '}
                 {item.frequency && `${t('medical.frequency')}: ${item.frequency}`}
-              </Text>
+              </ThemedText>
             )}
 
             {item.veterinarian && (
-              <Text>
+              <ThemedText>
                 {t('medical.veterinarian')}: {item.veterinarian}
-              </Text>
+              </ThemedText>
             )}
 
             {item.notes && (
-              <Text style={styles.notes}>
+              <ThemedText style={styles.notes}>
                 {item.notes}
-              </Text>
+              </ThemedText>
             )}
 
             {item.attachments && item.attachments.length > 0 && (
               <View style={styles.attachmentRow}>
-                <IconSymbol name="paperclip" size={16} color={Colors[colorScheme].icon} />
-                <Text style={styles.attachmentText}>
+                <IconSymbol name="paperclip" size={16} color={Colors[colorScheme!].icon} />
+                <ThemedText style={styles.attachmentText}>
                   {item.attachments.length} {item.attachments.length === 1 ?
                     t('medical.attachment_single') : t('medical.attachment_multiple')}
-                </Text>
+                </ThemedText>
               </View>
             )}
 
             <View style={styles.actionButtons}>
               <TouchableOpacity onPress={() => handleEditTreatment(item.id)}>
-                <Edit3 size={20} color={Colors[colorScheme].tint} />
+                <Edit3 size={20} color={Colors[colorScheme!].tint} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDeleteTreatment(item.id)}>
-                <Trash2 size={20} color={Colors[colorScheme].tint} />
+                <Trash2 size={20} color={Colors[colorScheme!].tint} />
               </TouchableOpacity>
             </View>
           </View>
@@ -350,7 +352,7 @@ export default function MedicalScreen() {
       <Stack.Screen options={{ title: t('medical.title'), headerShown: true }} />
 
       <View style={styles.header}>
-        <Text type="title">{t('medical.title')}</Text>
+        <ThemedText type="title">{t('medical.title')}</ThemedText>
         <View style={styles.headerButtons}>
           <Button
             size="$3"
@@ -382,13 +384,13 @@ export default function MedicalScreen() {
       >
         <Tabs.List>
           <Tabs.Tab value="all">
-            <Text>{t('medical.all')}</Text>
+            <ThemedText>{t('medical.all')}</ThemedText>
           </Tabs.Tab>
           <Tabs.Tab value="allergies">
-            <Text>{t('medical.allergies')}</Text>
+            <ThemedText>{t('medical.allergies')}</ThemedText>
           </Tabs.Tab>
           <Tabs.Tab value="treatments">
-            <Text>{t('medical.treatments')}</Text>
+            <ThemedText>{t('medical.treatments')}</ThemedText>
           </Tabs.Tab>
         </Tabs.List>
 
@@ -450,20 +452,20 @@ export default function MedicalScreen() {
     if (records.length === 0) {
       return (
         <ThemedView style={styles.emptyContainer}>
-          <IconSymbol name="heart.text.square" size={60} color={Colors[colorScheme].icon} />
-          <Text style={styles.emptyText}>{t('medical.empty')}</Text>
+          <IconSymbol name="heart.text.square" size={60} color={Colors[colorScheme!].icon} />
+          <ThemedText style={styles.emptyText}>{t('medical.empty')}</ThemedText>
           <View style={styles.emptyButtons}>
             <TouchableOpacity
-              style={[styles.addMedicalButton, { backgroundColor: Colors[colorScheme].tint }]}
+              style={[styles.addMedicalButton, { backgroundColor: Colors[colorScheme!].tint }]}
               onPress={() => handleAddAllergy()}
             >
-              <Text style={styles.addMedicalButtonText}>{t('medical.add_allergy')}</Text>
+              <ThemedText style={styles.addMedicalButtonText}>{t('medical.add_allergy')}</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.addMedicalButton, { backgroundColor: Colors[colorScheme].tint }]}
+              style={[styles.addMedicalButton, { backgroundColor: Colors[colorScheme!].tint }]}
               onPress={() => handleAddTreatment()}
             >
-              <Text style={styles.addMedicalButtonText}>{t('medical.add_treatment')}</Text>
+              <ThemedText style={styles.addMedicalButtonText}>{t('medical.add_treatment')}</ThemedText>
             </TouchableOpacity>
           </View>
         </ThemedView>

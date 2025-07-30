@@ -7,28 +7,16 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import UserProfile from '@/components/UserProfile';
+import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { storageService, Settings as StorageSettings } from '@/services/storage';
+import { LengthUnitSchema, type TDateFormat, type TLengthUnit, type TSettings, type TWeightUnit, WeightUnitSchema } from '@/services/models';
+import { storageService } from '@/services/storage';
 
-// Tipos para las configuraciones
-type Language = 'es' | 'en' | 'fr' | 'pt';
-type WeightUnit = 'kg' | 'lbs';
-type LengthUnit = 'cm' | 'in';
-type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY';
-
-type Settings = {
-  language: Language;
-  weightUnit: WeightUnit;
-  lengthUnit: LengthUnit;
-  dateFormat: DateFormat;
-  darkMode: boolean;
-  offlineMode: boolean;
-};
 
 // Configuración inicial
-const initialSettings: Settings = {
-  language: 'es',
+const initialSettings: TSettings = {
+  language: APP_LANGUAGES.EN,
   weightUnit: 'kg',
   lengthUnit: 'cm',
   dateFormat: 'DD/MM/YYYY',
@@ -37,30 +25,30 @@ const initialSettings: Settings = {
 };
 
 // Opciones para los selectores
-const languageOptions: { value: Language; label: string }[] = [
-  { value: 'es', label: 'Español' },
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Français' },
-  { value: 'pt', label: 'Português' },
+const languageOptions: { value: APP_LANGUAGES; label: string }[] = [
+  { value: APP_LANGUAGES.ES, label: 'Español' },
+  { value: APP_LANGUAGES.EN, label: 'English' },
+  { value: APP_LANGUAGES.FR, label: 'Français' },
+  { value: APP_LANGUAGES.PT, label: 'Português' },
 ];
 
-const weightUnitOptions: { value: WeightUnit; label: string }[] = [
-  { value: 'kg', label: 'Kilogramos (kg)' },
-  { value: 'lbs', label: 'Libras (lbs)' },
+const weightUnitOptions: { value: TWeightUnit; label: string }[] = [
+  { value: WeightUnitSchema.enum.kg, label: 'Kilogramos (kg)' },
+  { value: WeightUnitSchema.enum.lbs, label: 'Libras (lbs)' },
 ];
 
-const lengthUnitOptions: { value: LengthUnit; label: string }[] = [
-  { value: 'cm', label: 'Centímetros (cm)' },
-  { value: 'in', label: 'Pulgadas (in)' },
+const lengthUnitOptions: { value: TLengthUnit; label: string }[] = [
+  { value: LengthUnitSchema.enum.cm, label: 'Centímetros (cm)' },
+  { value: LengthUnitSchema.enum.in, label: 'Pulgadas (in)' },
 ];
 
-const dateFormatOptions: { value: DateFormat; label: string }[] = [
+const dateFormatOptions: { value: TDateFormat; label: string }[] = [
   { value: 'DD/MM/YYYY', label: 'DD/MM/AAAA' },
   { value: 'MM/DD/YYYY', label: 'MM/DD/AAAA' },
 ];
 
 export default function SettingsScreen() {
-  const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [settings, setSettings] = useState<TSettings>(initialSettings);
   const colorScheme = useColorScheme() ?? 'light';
 
   // Cargar configuraciones al iniciar
@@ -85,7 +73,7 @@ export default function SettingsScreen() {
   }, []);
 
   // Función para actualizar una configuración
-  const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+  const updateSetting = <K extends keyof TSettings>(key: K, value: TSettings[K]) => {
     const newSettings = {
       ...settings,
       [key]: value,
@@ -94,7 +82,7 @@ export default function SettingsScreen() {
     setSettings(newSettings);
 
     // Guardar en Firebase
-    const storageSettings: StorageSettings = {
+    const storageSettings: TSettings = {
       language: newSettings.language,
       weightUnit: newSettings.weightUnit,
       lengthUnit: newSettings.lengthUnit,

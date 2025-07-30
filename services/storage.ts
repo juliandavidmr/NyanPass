@@ -1,3 +1,4 @@
+import { APP_LANGUAGES } from "@/constants/appLanguages";
 import {
 	collection,
 	deleteDoc,
@@ -7,12 +8,20 @@ import {
 	query,
 	setDoc,
 	where,
-	writeBatch,
 } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 import { firebaseAuth, firebaseDb } from "../config/firebase";
+import type {
+	TAllergy,
+	TCatProfile,
+	TSettings,
+	TTreatment,
+	TVaccine,
+} from "./models";
 
 // Colecciones de Firestore
 const COLLECTIONS = {
+	USERS: "users",
 	CATS: "cats",
 	VACCINES: "vaccines",
 	ALLERGIES: "allergies",
@@ -20,69 +29,27 @@ const COLLECTIONS = {
 	SETTINGS: "settings",
 };
 
-// Tipos de datos
-export type CatProfile = {
-	id: string;
-	name: string;
-	nickname?: string;
-	birthdate: Date;
-	breed: string;
-	weight: number;
-	weightUnit: "kg" | "lbs";
-	traits: string[];
-	image?: string;
+// Función para construir rutas de documentos
+const getDocPath = {
+	user: (userId: string) => `${COLLECTIONS.USERS}/${userId}`,
+	cat: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}`,
+	vaccine: (userId: string, catId: string, vaccineId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.VACCINES}/${vaccineId}`,
+	allergy: (userId: string, catId: string, allergyId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.ALLERGIES}/${allergyId}`,
+	treatment: (userId: string, catId: string, treatmentId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.TREATMENTS}/${treatmentId}`,
+	settings: (userId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.SETTINGS}/user_settings`,
 };
 
-export type Vaccine = {
-	id: string;
-	catId: string;
-	name: string;
-	applicationDate: Date;
-	nextDoseDate?: Date;
-	notes?: string;
-};
-
-export type Severity = "low" | "medium" | "high";
-
-export type Allergy = {
-	id: string;
-	catId: string;
-	name: string;
-	symptoms: string;
-	severity: Severity;
-	notes?: string;
-};
-
-export type Treatment = {
-	id: string;
-	catId: string;
-	name: string;
-	startDate: Date;
-	endDate?: Date;
-	dosage?: string;
-	frequency?: string;
-	notes?: string;
-	attachments?: string[];
-};
-
-export type Language = "es" | "en" | "fr" | "pt";
-export type WeightUnit = "kg" | "lbs";
-export type LengthUnit = "cm" | "in";
-export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY";
-
-export type Settings = {
-	id?: string;
-	language: Language;
-	weightUnit: WeightUnit;
-	lengthUnit: LengthUnit;
-	dateFormat: DateFormat;
-	darkMode: boolean;
-	offlineMode: boolean;
+// Función para construir rutas de colecciones
+const getCollectionPath = {
+	cats: (userId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}`,
+	vaccines: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.VACCINES}`,
+	allergies: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.ALLERGIES}`,
+	treatments: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.TREATMENTS}`,
 };
 
 // Función para generar un ID único
 export const generateId = (): string => {
-	return Date.now().toString(36) + Math.random().toString(36).substring(2);
+	return uuidv4();
 };
 
 // Funciones para convertir fechas a objetos Date
@@ -124,17 +91,16 @@ class StorageService {
 	}
 
 	// Gatos
-	async getCats(): Promise<CatProfile[]> {
+	async getCats(): Promise<TCatProfile[]> {
 		try {
 			const userId = this.getUserId();
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const q = query(catsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const catsRef = collection(firebaseDb, getCollectionPath.cats(userId));
+			const querySnapshot = await getDocs(catsRef);
 
-			const cats: CatProfile[] = [];
+			const cats: TCatProfile[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				cats.push(convertDates(data) as CatProfile);
+				cats.push(convertDates(data) as TCatProfile);
 			});
 
 			return cats;
@@ -144,40 +110,15 @@ class StorageService {
 		}
 	}
 
-	async saveCats(cats: CatProfile[]): Promise<void> {
+	async getCat(catId: string): Promise<TCatProfile | undefined> {
 		try {
 			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Primero eliminamos todos los gatos existentes del usuario
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const q = query(catsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
-
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.CATS, document.id));
-			});
-
-			// Luego añadimos los nuevos gatos
-			cats.forEach((cat) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.CATS, cat.id);
-				batch.set(docRef, { ...cat, userId });
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al guardar gatos:", error);
-		}
-	}
-
-	async getCat(catId: string): Promise<CatProfile | undefined> {
-		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, catId);
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, catId));
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
 				const data = docSnap.data();
-				return convertDates(data) as CatProfile;
+				return convertDates(data) as TCatProfile;
 			}
 
 			return undefined;
@@ -187,16 +128,16 @@ class StorageService {
 		}
 	}
 
-	async addCat(cat: Omit<CatProfile, "id">): Promise<CatProfile> {
+	async addCat(cat: Omit<TCatProfile, "id">): Promise<TCatProfile> {
 		try {
 			const userId = this.getUserId();
-			const newCat: CatProfile = {
+			const newCat: TCatProfile = {
 				...cat,
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, newCat.id);
-			await setDoc(docRef, { ...newCat, userId });
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, newCat.id));
+			await setDoc(docRef, newCat);
 
 			return newCat;
 		} catch (error) {
@@ -205,68 +146,28 @@ class StorageService {
 		}
 	}
 
-	async updateCat(cat: CatProfile): Promise<void> {
+	async updateCat(cat: TCatProfile): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, cat.id);
-			await setDoc(docRef, { ...cat, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, cat.id));
+			await setDoc(docRef, cat, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar gato:", error);
 			throw error;
 		}
 	}
 
-	async deleteCat(catId: string): Promise<void> {
-		try {
-			const batch = writeBatch(firebaseDb);
-
-			// Eliminar el gato
-			const catRef = doc(firebaseDb, COLLECTIONS.CATS, catId);
-			batch.delete(catRef);
-
-			// Eliminar vacunas asociadas
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const vaccinesQuery = query(vaccinesRef, where("catId", "==", catId));
-			const vaccinesSnapshot = await getDocs(vaccinesQuery);
-			vaccinesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Eliminar alergias asociadas
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const allergiesQuery = query(allergiesRef, where("catId", "==", catId));
-			const allergiesSnapshot = await getDocs(allergiesQuery);
-			allergiesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Eliminar tratamientos asociados
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const treatmentsQuery = query(treatmentsRef, where("catId", "==", catId));
-			const treatmentsSnapshot = await getDocs(treatmentsQuery);
-			treatmentsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al eliminar gato:", error);
-			throw error;
-		}
-	}
-
 	// Vacunas
-	async getVaccines(): Promise<Vaccine[]> {
+	async getVaccines(catId: string): Promise<TVaccine[]> {
 		try {
 			const userId = this.getUserId();
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const q = query(vaccinesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const vaccinesRef = collection(firebaseDb, getCollectionPath.vaccines(userId, catId));
+			const querySnapshot = await getDocs(vaccinesRef);
 
-			const vaccines: Vaccine[] = [];
+			const vaccines: TVaccine[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				vaccines.push(convertDates(data) as Vaccine);
+				vaccines.push(convertDates(data) as TVaccine);
 			});
 
 			return vaccines;
@@ -276,42 +177,34 @@ class StorageService {
 		}
 	}
 
-	async saveVaccines(vaccines: Vaccine[]): Promise<void> {
+	// Obtener todas las vacunas de todos los gatos del usuario
+	async getAllVaccines(): Promise<TVaccine[]> {
 		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
+			const cats = await this.getCats();
+			const allVaccines: TVaccine[] = [];
 
-			// Primero eliminamos todas las vacunas existentes del usuario
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const q = query(vaccinesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			for (const cat of cats) {
+				const vaccines = await this.getVaccines(cat.id);
+				allVaccines.push(...vaccines);
+			}
 
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Luego añadimos las nuevas vacunas
-			vaccines.forEach((vaccine) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccine.id);
-				batch.set(docRef, { ...vaccine, userId });
-			});
-
-			await batch.commit();
+			return allVaccines;
 		} catch (error) {
-			console.error("Error al guardar vacunas:", error);
+			console.error("Error al obtener todas las vacunas:", error);
+			return [];
 		}
 	}
 
-	async addVaccine(vaccine: Omit<Vaccine, "id">): Promise<Vaccine> {
+	async addVaccine(vaccine: Omit<TVaccine, "id">): Promise<TVaccine> {
 		try {
 			const userId = this.getUserId();
-			const newVaccine: Vaccine = {
+			const newVaccine: TVaccine = {
 				...vaccine,
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, newVaccine.id);
-			await setDoc(docRef, { ...newVaccine, userId });
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, vaccine.catId, newVaccine.id));
+			await setDoc(docRef, newVaccine);
 
 			return newVaccine;
 		} catch (error) {
@@ -320,20 +213,21 @@ class StorageService {
 		}
 	}
 
-	async updateVaccine(vaccine: Vaccine): Promise<void> {
+	async updateVaccine(vaccine: TVaccine): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccine.id);
-			await setDoc(docRef, { ...vaccine, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, vaccine.catId, vaccine.id));
+			await setDoc(docRef, vaccine, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar vacuna:", error);
 			throw error;
 		}
 	}
 
-	async deleteVaccine(vaccineId: string): Promise<void> {
+	async deleteVaccine(catId: string, vaccineId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccineId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, catId, vaccineId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar vacuna:", error);
@@ -341,18 +235,35 @@ class StorageService {
 		}
 	}
 
-	// Alergias
-	async getAllergies(): Promise<Allergy[]> {
+	async getVaccine(catId: string, vaccineId: string): Promise<TVaccine | undefined> {
 		try {
 			const userId = this.getUserId();
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const q = query(allergiesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, catId, vaccineId));
+			const docSnap = await getDoc(docRef);
 
-			const allergies: Allergy[] = [];
+			if (docSnap.exists()) {
+				const data = docSnap.data();
+				return convertDates(data) as TVaccine;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener vacuna:", error);
+			return undefined;
+		}
+	}
+
+	// Alergias
+	async getAllergies(catId: string): Promise<TAllergy[]> {
+		try {
+			const userId = this.getUserId();
+			const allergiesRef = collection(firebaseDb, getCollectionPath.allergies(userId, catId));
+			const querySnapshot = await getDocs(allergiesRef);
+
+			const allergies: TAllergy[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				allergies.push(convertDates(data) as Allergy);
+				allergies.push(convertDates(data) as TAllergy);
 			});
 
 			return allergies;
@@ -362,42 +273,34 @@ class StorageService {
 		}
 	}
 
-	async saveAllergies(allergies: Allergy[]): Promise<void> {
+	// Obtener todas las alergias de todos los gatos del usuario
+	async getAllAllergies(): Promise<TAllergy[]> {
 		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
+			const cats = await this.getCats();
+			const allAllergies: TAllergy[] = [];
 
-			// Primero eliminamos todas las alergias existentes del usuario
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const q = query(allergiesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			for (const cat of cats) {
+				const allergies = await this.getAllergies(cat.id);
+				allAllergies.push(...allergies);
+			}
 
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Luego añadimos las nuevas alergias
-			allergies.forEach((allergy) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergy.id);
-				batch.set(docRef, { ...allergy, userId });
-			});
-
-			await batch.commit();
+			return allAllergies;
 		} catch (error) {
-			console.error("Error al guardar alergias:", error);
+			console.error("Error al obtener todas las alergias:", error);
+			return [];
 		}
 	}
 
-	async addAllergy(allergy: Omit<Allergy, "id">): Promise<Allergy> {
+	async addAllergy(allergy: Omit<TAllergy, "id">): Promise<TAllergy> {
 		try {
 			const userId = this.getUserId();
-			const newAllergy: Allergy = {
+			const newAllergy: TAllergy = {
 				...allergy,
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, newAllergy.id);
-			await setDoc(docRef, { ...newAllergy, userId });
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, allergy.catId, newAllergy.id));
+			await setDoc(docRef, newAllergy);
 
 			return newAllergy;
 		} catch (error) {
@@ -406,20 +309,21 @@ class StorageService {
 		}
 	}
 
-	async updateAllergy(allergy: Allergy): Promise<void> {
+	async updateAllergy(allergy: TAllergy): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergy.id);
-			await setDoc(docRef, { ...allergy, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, allergy.catId, allergy.id));
+			await setDoc(docRef, allergy, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar alergia:", error);
 			throw error;
 		}
 	}
 
-	async deleteAllergy(allergyId: string): Promise<void> {
+	async deleteAllergy(catId: string, allergyId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergyId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, catId, allergyId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar alergia:", error);
@@ -427,18 +331,34 @@ class StorageService {
 		}
 	}
 
-	// Tratamientos
-	async getTreatments(): Promise<Treatment[]> {
+	async getAllergy(catId: string, allergyId: string): Promise<TAllergy | undefined> {
 		try {
 			const userId = this.getUserId();
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const q = query(treatmentsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, catId, allergyId));
+			const docSnap = await getDoc(docRef);
 
-			const treatments: Treatment[] = [];
+			if (docSnap.exists()) {
+				return docSnap.data() as TAllergy;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener alergia:", error);
+			return undefined;
+		}
+	}
+
+	// Tratamientos
+	async getTreatments(catId: string): Promise<TTreatment[]> {
+		try {
+			const userId = this.getUserId();
+			const treatmentsRef = collection(firebaseDb, getCollectionPath.treatments(userId, catId));
+			const querySnapshot = await getDocs(treatmentsRef);
+
+			const treatments: TTreatment[] = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				treatments.push(convertDates(data) as Treatment);
+				treatments.push(convertDates(data) as TTreatment);
 			});
 
 			return treatments;
@@ -448,42 +368,34 @@ class StorageService {
 		}
 	}
 
-	async saveTreatments(treatments: Treatment[]): Promise<void> {
+	// Obtener todos los tratamientos de todos los gatos del usuario
+	async getAllTreatments(): Promise<TTreatment[]> {
 		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
+			const cats = await this.getCats();
+			const allTreatments: TTreatment[] = [];
 
-			// Primero eliminamos todos los tratamientos existentes del usuario
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const q = query(treatmentsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			for (const cat of cats) {
+				const treatments = await this.getTreatments(cat.id);
+				allTreatments.push(...treatments);
+			}
 
-			querySnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			// Luego añadimos los nuevos tratamientos
-			treatments.forEach((treatment) => {
-				const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatment.id);
-				batch.set(docRef, { ...treatment, userId });
-			});
-
-			await batch.commit();
+			return allTreatments;
 		} catch (error) {
-			console.error("Error al guardar tratamientos:", error);
+			console.error("Error al obtener todos los tratamientos:", error);
+			return [];
 		}
 	}
 
-	async addTreatment(treatment: Omit<Treatment, "id">): Promise<Treatment> {
+	async addTreatment(treatment: Omit<TTreatment, "id">): Promise<TTreatment> {
 		try {
 			const userId = this.getUserId();
-			const newTreatment: Treatment = {
+			const newTreatment: TTreatment = {
 				...treatment,
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, newTreatment.id);
-			await setDoc(docRef, { ...newTreatment, userId });
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, treatment.catId, newTreatment.id));
+			await setDoc(docRef, newTreatment);
 
 			return newTreatment;
 		} catch (error) {
@@ -492,20 +404,21 @@ class StorageService {
 		}
 	}
 
-	async updateTreatment(treatment: Treatment): Promise<void> {
+	async updateTreatment(treatment: TTreatment): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatment.id);
-			await setDoc(docRef, { ...treatment, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, treatment.catId, treatment.id));
+			await setDoc(docRef, treatment, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar tratamiento:", error);
 			throw error;
 		}
 	}
 
-	async deleteTreatment(treatmentId: string): Promise<void> {
+	async deleteTreatment(catId: string, treatmentId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatmentId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, catId, treatmentId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar tratamiento:", error);
@@ -513,21 +426,38 @@ class StorageService {
 		}
 	}
 
-	// Configuraciones
-	async getSettings(): Promise<Settings> {
+	async getTreatment(catId: string, treatmentId: string): Promise<TTreatment | undefined> {
 		try {
 			const userId = this.getUserId();
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, catId, treatmentId));
+			const docSnap = await getDoc(docRef);
+
+			if (docSnap.exists()) {
+				return docSnap.data() as TTreatment;
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error("Error al obtener tratamiento:", error);
+			return undefined;
+		}
+	}
+
+	// Configuraciones
+	async getSettings(): Promise<TSettings> {
+		try {
+			const userId = this.getUserId();
+			const settingsRef = doc(firebaseDb, getDocPath.settings(userId));
 			const docSnap = await getDoc(settingsRef);
 
 			if (docSnap.exists()) {
-				return docSnap.data() as Settings;
+				return docSnap.data() as TSettings;
 			}
 
 			// Valores por defecto
 			return {
 				id: userId,
-				language: "es",
+				language: APP_LANGUAGES.ES,
 				weightUnit: "kg",
 				lengthUnit: "cm",
 				dateFormat: "DD/MM/YYYY",
@@ -538,7 +468,7 @@ class StorageService {
 			console.error("Error al obtener configuraciones:", error);
 			// Valores por defecto en caso de error
 			return {
-				language: "es",
+				language: APP_LANGUAGES.EN,
 				weightUnit: "kg",
 				lengthUnit: "cm",
 				dateFormat: "DD/MM/YYYY",
@@ -548,67 +478,15 @@ class StorageService {
 		}
 	}
 
-	async saveSettings(settings: Settings): Promise<void> {
+	async saveSettings(settings: TSettings): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
+			const settingsRef = doc(firebaseDb, getDocPath.settings(userId));
 			await setDoc(settingsRef, { ...settings, id: userId });
 		} catch (error) {
 			console.error("Error al guardar configuraciones:", error);
 		}
 	}
-
-	// Utilidades
-	async clearAllData(): Promise<void> {
-		try {
-			const userId = this.getUserId();
-			const batch = writeBatch(firebaseDb);
-
-			// Eliminar todos los gatos del usuario
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const catsQuery = query(catsRef, where("userId", "==", userId));
-			const catsSnapshot = await getDocs(catsQuery);
-			catsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.CATS, document.id));
-			});
-
-			// Eliminar todas las vacunas del usuario
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const vaccinesQuery = query(vaccinesRef, where("userId", "==", userId));
-			const vaccinesSnapshot = await getDocs(vaccinesQuery);
-			vaccinesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.VACCINES, document.id));
-			});
-
-			// Eliminar todas las alergias del usuario
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const allergiesQuery = query(allergiesRef, where("userId", "==", userId));
-			const allergiesSnapshot = await getDocs(allergiesQuery);
-			allergiesSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.ALLERGIES, document.id));
-			});
-
-			// Eliminar todos los tratamientos del usuario
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const treatmentsQuery = query(
-				treatmentsRef,
-				where("userId", "==", userId)
-			);
-			const treatmentsSnapshot = await getDocs(treatmentsQuery);
-			treatmentsSnapshot.forEach((document) => {
-				batch.delete(doc(firebaseDb, COLLECTIONS.TREATMENTS, document.id));
-			});
-
-			// Eliminar configuraciones del usuario
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
-			batch.delete(settingsRef);
-
-			await batch.commit();
-		} catch (error) {
-			console.error("Error al limpiar todos los datos:", error);
-		}
-	}
 }
 
-// Exportar una instancia única del servicio
 export const storageService = new StorageService();
