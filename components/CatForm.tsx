@@ -115,7 +115,7 @@ const CatForm: React.FC<CatFormProps> = ({ catId, onSave, onCancel }) => {
       const catProfile: TCatProfile = CatProfileSchema.parse({
         id: catId || `cat-${Date.now()}`,
         name: data.name,
-        nickname: data.nickname || undefined,
+        nickname: data.nickname || null,
         birthdate: data.birthDate,
         breed: data.breed,
         traits: traits,

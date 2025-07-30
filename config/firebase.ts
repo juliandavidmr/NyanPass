@@ -1,3 +1,4 @@
+import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 
 import { initializeApp } from "firebase/app";
@@ -8,5 +9,7 @@ import { firebaseConfig } from "../firebase.config";
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseDb = getFirestore(firebaseApp);
 const firebaseAuth = getAuth(firebaseApp);
+const firebaseAnalytics =
+	typeof window !== "undefined" ? getAnalytics(firebaseApp) : undefined;
 
-export { firebaseApp, firebaseAuth, firebaseDb };
+export { firebaseAnalytics, firebaseApp, firebaseAuth, firebaseDb };

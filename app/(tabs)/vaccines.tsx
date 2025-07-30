@@ -43,7 +43,7 @@ export default function VaccinesScreen() {
     setLoading(true);
     try {
       const [allVaccines, allCats] = await Promise.all([
-        storageService.getVaccines(),
+        storageService.getAllVaccines(),
         storageService.getCats()
       ]);
       setVaccines(allVaccines);
@@ -81,7 +81,7 @@ export default function VaccinesScreen() {
   };
 
   // Manejar la eliminación de una vacuna
-  const handleDeleteVaccine = async (vaccineId: string) => {
+  const handleDeleteVaccine = async (vaccine: TVaccine) => {
     Alert.alert(
       t('general.delete'),
       '¿Estás seguro de que deseas eliminar esta vacuna? Esta acción no se puede deshacer.',
@@ -95,7 +95,7 @@ export default function VaccinesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.deleteVaccine(vaccineId);
+              await storageService.deleteVaccine(vaccine.catId, vaccine.id);
               loadData();
             } catch (error) {
               console.error('Error deleting vaccine:', error);
@@ -156,7 +156,7 @@ export default function VaccinesScreen() {
             <TouchableOpacity onPress={() => handleEditVaccine(item.id)}>
               <Edit3 size={20} color={Colors[colorScheme ?? 'light'].color} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDeleteVaccine(item.id)}>
+            <TouchableOpacity onPress={() => handleDeleteVaccine(item)}>
               <Trash2 size={20} color={Colors[colorScheme ?? 'light'].color} />
             </TouchableOpacity>
           </XStack>

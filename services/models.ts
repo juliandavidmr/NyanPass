@@ -19,8 +19,8 @@ export const CatProfileSchema = z
 	.object({
 		id: z.string(),
 		name: z.string().min(2).max(30),
-		nickname: z.string().min(2).max(20).optional(),
-		birthdate: z.date().max(new Date()),
+		nickname: z.string().max(20).default("").nullable(),
+		birthdate: z.date(),
 		breed: z.string().min(2).max(30),
 		weight: z.number().min(0).max(100).optional(),
 		weightUnit: CatWeightUnit.optional().default(CatWeightUnit.enum.kg),

@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { View } from 'tamagui';
 
 import CatForm from '@/components/CatForm';
 import { ThemedText } from '@/components/ThemedText';
@@ -9,70 +10,21 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Tipo para los perfiles de gatos
-type CatProfile = {
-  id: string;
-  name: string;
-  nickname?: string;
-  birthdate: Date;
-  breed: string;
-  weight: number;
-  weightUnit: 'kg' | 'lbs';
-  traits: string[];
-  image?: string;
-};
-
-// Datos de ejemplo
-const sampleCats: CatProfile[] = [
-  {
-    id: '1',
-    name: 'Luna',
-    nickname: 'Lunita',
-    birthdate: new Date('2020-05-15'),
-    breed: 'Siamés',
-    weight: 4.2,
-    weightUnit: 'kg',
-    traits: ['#juguetón', '#cariñoso', '#curioso'],
-    image: 'https://placekitten.com/200/200',
-  },
-  {
-    id: '2',
-    name: 'Simba',
-    birthdate: new Date('2019-10-10'),
-    breed: 'Maine Coon',
-    weight: 7.5,
-    weightUnit: 'kg',
-    traits: ['#tranquilo', '#independiente'],
-    image: 'https://placekitten.com/201/201',
-  },
-];
-
-// Servicio para gestionar los gatos (simulado)
-const catService = {
-  getCats: async (): Promise<CatProfile[]> => {
-    return Promise.resolve(sampleCats);
-  },
-  saveCat: async (cat: CatProfile): Promise<CatProfile> => {
-    return Promise.resolve(cat);
-  },
-  deleteCat: async (id: string): Promise<void> => {
-    return Promise.resolve();
-  }
-};
+import type { TCatProfile } from '@/services/models';
+import { storageService } from '@/services/storage';
 
 export default function CatsScreen() {
-  const [cats, setCats] = useState<CatProfile[]>(sampleCats);
+  const [cats, setCats] = useState<TCatProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<CatProfile | null>(null);
+  const [selectedCat, setSelectedCat] = useState<TCatProfile | undefined>(undefined);
   const colorScheme = useColorScheme() ?? 'light';
 
   // Cargar la lista de gatos
   const loadCats = async () => {
     setLoading(true);
     try {
-      const allCats = await catService.getCats();
+      const allCats = await storageService.getCats();
       setCats(allCats);
     } catch (error) {
       console.error('Error loading cats:', error);
@@ -108,12 +60,12 @@ export default function CatsScreen() {
 
   // Manejar la creación de un nuevo gato
   const handleAddCat = () => {
-    setSelectedCat(null);
+    setSelectedCat(undefined);
     setShowForm(true);
   };
 
   // Manejar la edición de un gato existente
-  const handleEditCat = (cat: CatProfile) => {
+  const handleEditCat = (cat: TCatProfile) => {
     setSelectedCat(cat);
     setShowForm(true);
   };
@@ -133,7 +85,7 @@ export default function CatsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await catService.deleteCat(catId);
+              await storageService.deleteCat(catId);
               loadCats();
             } catch (error) {
               console.error('Error deleting cat:', error);
@@ -145,9 +97,9 @@ export default function CatsScreen() {
   };
 
   // Manejar el guardado de un gato
-  const handleSaveCat = async (cat: CatProfile) => {
+  const handleSaveCat = async (cat: TCatProfile) => {
     try {
-      await catService.saveCat(cat);
+      await storageService.saveCat(cat);
       setShowForm(false);
       loadCats();
     } catch (error) {
@@ -156,7 +108,7 @@ export default function CatsScreen() {
   };
 
   // Renderizar cada tarjeta de gato
-  const renderCatCard = ({ item }: { item: CatProfile }) => (
+  const renderCatCard = ({ item }: { item: TCatProfile }) => (
     <TouchableOpacity
       style={styles.catCard}
       activeOpacity={0.7}
@@ -170,7 +122,12 @@ export default function CatsScreen() {
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.catImagePlaceholder, { backgroundColor: Colors[colorScheme].tint }]}>
+          <View
+            style={StyleSheet.flatten([
+              styles.catImagePlaceholder,
+              { backgroundColor: Colors[colorScheme].tint }
+            ])}
+          >
             <IconSymbol name="cat.fill" size={40} color="white" />
           </View>
         )}
@@ -200,10 +157,10 @@ export default function CatsScreen() {
 
       <View style={styles.actionButtons}>
         <TouchableOpacity onPress={() => handleEditCat(item)}>
-          <IconSymbol name="pencil" size={20} color={Colors[colorScheme].text} />
+          <IconSymbol name="pencil" size={20} color={Colors[colorScheme].color} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDeleteCat(item.id)}>
-          <IconSymbol name="trash" size={20} color={Colors[colorScheme].text} />
+          <IconSymbol name="trash" size={20} color={Colors[colorScheme].color} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -229,17 +186,33 @@ export default function CatsScreen() {
             </TouchableOpacity>
           </View>
         }
-        ListEmptyComponent={
-          <ThemedView style={styles.emptyContainer}>
-            <IconSymbol name="cat" size={60} color={Colors[colorScheme].icon} />
-            <ThemedText style={styles.emptyText}>No tienes gatos registrados</ThemedText>
+        ListFooterComponent={
+          <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.addCatButton, { backgroundColor: Colors[colorScheme].tint }]}
+              style={StyleSheet.flatten([
+                styles.addCatButton,
+              ])}
               onPress={handleAddCat}
             >
               <ThemedText style={styles.addCatButtonText}>Agregar Gato</ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+            <ThemedText>{cats.length} gatos</ThemedText>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <IconSymbol name="cat" size={60} color={Colors[colorScheme].icon} />
+            <ThemedText style={styles.emptyText}>No tienes gatos registrados</ThemedText>
+            <TouchableOpacity
+              style={StyleSheet.flatten([
+                styles.addCatButton,
+                { backgroundColor: Colors[colorScheme].tint }
+              ])}
+              onPress={handleAddCat}
+            >
+              <ThemedText style={styles.addCatButtonText}>Agregar Gato</ThemedText>
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -335,13 +308,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
   },
   addCatButtonText: {
-    color: 'white',
+    fontSize: 16,
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  footer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 12,
+    padding: 16,
   },
 });

@@ -14,6 +14,7 @@ import { formatDate } from '../../config/i18n';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { storageService } from '../../services/storage';
+import type { TAllergy, TTreatment } from '../../services/models';
 
 // Tipos para el historial médico
 type Severity = 'low' | 'medium' | 'high';
@@ -67,8 +68,8 @@ export default function MedicalScreen() {
     setLoading(true);
     try {
       const [allAllergies, allTreatments, allCats] = await Promise.all([
-        storageService.getAllergies(),
-        storageService.getTreatments(),
+        storageService.getAllAllergies(),
+        storageService.getAllTreatments(),
         storageService.getCats()
       ]);
       setAllergies(allAllergies);
@@ -134,7 +135,7 @@ export default function MedicalScreen() {
   };
 
   // Manejar la eliminación de una alergia
-  const handleDeleteAllergy = async (allergyId: string) => {
+  const handleDeleteAllergy = async (allergy: TAllergy) => {
     Alert.alert(
       t('general.delete'),
       t('medical.delete_allergy_confirm'),
@@ -148,7 +149,7 @@ export default function MedicalScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.deleteAllergy(allergyId);
+              await storageService.deleteAllergy(allergy.catId, allergy.id);
               loadData();
             } catch (error) {
               console.error('Error deleting allergy:', error);
@@ -174,7 +175,7 @@ export default function MedicalScreen() {
   };
 
   // Manejar la eliminación de un tratamiento
-  const handleDeleteTreatment = async (treatmentId: string) => {
+  const handleDeleteTreatment = async (treatment: TTreatment) => {
     Alert.alert(
       t('general.delete'),
       t('medical.delete_treatment_confirm'),
@@ -188,7 +189,7 @@ export default function MedicalScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await storageService.deleteTreatment(treatmentId);
+              await storageService.deleteTreatment(treatment.catId, treatment.id);
               loadData();
             } catch (error) {
               console.error('Error deleting treatment:', error);

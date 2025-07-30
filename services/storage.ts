@@ -21,11 +21,30 @@ import type {
 
 // Colecciones de Firestore
 const COLLECTIONS = {
+	USERS: "users",
 	CATS: "cats",
 	VACCINES: "vaccines",
 	ALLERGIES: "allergies",
 	TREATMENTS: "treatments",
 	SETTINGS: "settings",
+};
+
+// Función para construir rutas de documentos
+const getDocPath = {
+	user: (userId: string) => `${COLLECTIONS.USERS}/${userId}`,
+	cat: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}`,
+	vaccine: (userId: string, catId: string, vaccineId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.VACCINES}/${vaccineId}`,
+	allergy: (userId: string, catId: string, allergyId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.ALLERGIES}/${allergyId}`,
+	treatment: (userId: string, catId: string, treatmentId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.TREATMENTS}/${treatmentId}`,
+	settings: (userId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.SETTINGS}/user_settings`,
+};
+
+// Función para construir rutas de colecciones
+const getCollectionPath = {
+	cats: (userId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}`,
+	vaccines: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.VACCINES}`,
+	allergies: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.ALLERGIES}`,
+	treatments: (userId: string, catId: string) => `${COLLECTIONS.USERS}/${userId}/${COLLECTIONS.CATS}/${catId}/${COLLECTIONS.TREATMENTS}`,
 };
 
 // Función para generar un ID único
@@ -75,9 +94,8 @@ class StorageService {
 	async getCats(): Promise<TCatProfile[]> {
 		try {
 			const userId = this.getUserId();
-			const catsRef = collection(firebaseDb, COLLECTIONS.CATS);
-			const q = query(catsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const catsRef = collection(firebaseDb, getCollectionPath.cats(userId));
+			const querySnapshot = await getDocs(catsRef);
 
 			const cats: TCatProfile[] = [];
 			querySnapshot.forEach((doc) => {
@@ -94,7 +112,8 @@ class StorageService {
 
 	async getCat(catId: string): Promise<TCatProfile | undefined> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, catId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, catId));
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
@@ -117,8 +136,8 @@ class StorageService {
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, newCat.id);
-			await setDoc(docRef, { ...newCat, userId });
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, newCat.id));
+			await setDoc(docRef, newCat);
 
 			return newCat;
 		} catch (error) {
@@ -130,8 +149,8 @@ class StorageService {
 	async updateCat(cat: TCatProfile): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.CATS, cat.id);
-			await setDoc(docRef, { ...cat, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.cat(userId, cat.id));
+			await setDoc(docRef, cat, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar gato:", error);
 			throw error;
@@ -139,12 +158,11 @@ class StorageService {
 	}
 
 	// Vacunas
-	async getVaccines(): Promise<TVaccine[]> {
+	async getVaccines(catId: string): Promise<TVaccine[]> {
 		try {
 			const userId = this.getUserId();
-			const vaccinesRef = collection(firebaseDb, COLLECTIONS.VACCINES);
-			const q = query(vaccinesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const vaccinesRef = collection(firebaseDb, getCollectionPath.vaccines(userId, catId));
+			const querySnapshot = await getDocs(vaccinesRef);
 
 			const vaccines: TVaccine[] = [];
 			querySnapshot.forEach((doc) => {
@@ -159,6 +177,24 @@ class StorageService {
 		}
 	}
 
+	// Obtener todas las vacunas de todos los gatos del usuario
+	async getAllVaccines(): Promise<TVaccine[]> {
+		try {
+			const cats = await this.getCats();
+			const allVaccines: TVaccine[] = [];
+
+			for (const cat of cats) {
+				const vaccines = await this.getVaccines(cat.id);
+				allVaccines.push(...vaccines);
+			}
+
+			return allVaccines;
+		} catch (error) {
+			console.error("Error al obtener todas las vacunas:", error);
+			return [];
+		}
+	}
+
 	async addVaccine(vaccine: Omit<TVaccine, "id">): Promise<TVaccine> {
 		try {
 			const userId = this.getUserId();
@@ -167,8 +203,8 @@ class StorageService {
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, newVaccine.id);
-			await setDoc(docRef, { ...newVaccine, userId });
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, vaccine.catId, newVaccine.id));
+			await setDoc(docRef, newVaccine);
 
 			return newVaccine;
 		} catch (error) {
@@ -180,17 +216,18 @@ class StorageService {
 	async updateVaccine(vaccine: TVaccine): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccine.id);
-			await setDoc(docRef, { ...vaccine, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, vaccine.catId, vaccine.id));
+			await setDoc(docRef, vaccine, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar vacuna:", error);
 			throw error;
 		}
 	}
 
-	async deleteVaccine(vaccineId: string): Promise<void> {
+	async deleteVaccine(catId: string, vaccineId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccineId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, catId, vaccineId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar vacuna:", error);
@@ -198,9 +235,10 @@ class StorageService {
 		}
 	}
 
-	async getVaccine(vaccineId: string): Promise<TVaccine | undefined> {
+	async getVaccine(catId: string, vaccineId: string): Promise<TVaccine | undefined> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.VACCINES, vaccineId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.vaccine(userId, catId, vaccineId));
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
@@ -216,12 +254,11 @@ class StorageService {
 	}
 
 	// Alergias
-	async getAllergies(): Promise<TAllergy[]> {
+	async getAllergies(catId: string): Promise<TAllergy[]> {
 		try {
 			const userId = this.getUserId();
-			const allergiesRef = collection(firebaseDb, COLLECTIONS.ALLERGIES);
-			const q = query(allergiesRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const allergiesRef = collection(firebaseDb, getCollectionPath.allergies(userId, catId));
+			const querySnapshot = await getDocs(allergiesRef);
 
 			const allergies: TAllergy[] = [];
 			querySnapshot.forEach((doc) => {
@@ -236,6 +273,24 @@ class StorageService {
 		}
 	}
 
+	// Obtener todas las alergias de todos los gatos del usuario
+	async getAllAllergies(): Promise<TAllergy[]> {
+		try {
+			const cats = await this.getCats();
+			const allAllergies: TAllergy[] = [];
+
+			for (const cat of cats) {
+				const allergies = await this.getAllergies(cat.id);
+				allAllergies.push(...allergies);
+			}
+
+			return allAllergies;
+		} catch (error) {
+			console.error("Error al obtener todas las alergias:", error);
+			return [];
+		}
+	}
+
 	async addAllergy(allergy: Omit<TAllergy, "id">): Promise<TAllergy> {
 		try {
 			const userId = this.getUserId();
@@ -244,8 +299,8 @@ class StorageService {
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, newAllergy.id);
-			await setDoc(docRef, { ...newAllergy, userId });
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, allergy.catId, newAllergy.id));
+			await setDoc(docRef, newAllergy);
 
 			return newAllergy;
 		} catch (error) {
@@ -257,17 +312,18 @@ class StorageService {
 	async updateAllergy(allergy: TAllergy): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergy.id);
-			await setDoc(docRef, { ...allergy, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, allergy.catId, allergy.id));
+			await setDoc(docRef, allergy, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar alergia:", error);
 			throw error;
 		}
 	}
 
-	async deleteAllergy(allergyId: string): Promise<void> {
+	async deleteAllergy(catId: string, allergyId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergyId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, catId, allergyId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar alergia:", error);
@@ -275,9 +331,10 @@ class StorageService {
 		}
 	}
 
-	async getAllergy(allergyId: string): Promise<TAllergy | undefined> {
+	async getAllergy(catId: string, allergyId: string): Promise<TAllergy | undefined> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.ALLERGIES, allergyId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.allergy(userId, catId, allergyId));
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
@@ -292,12 +349,11 @@ class StorageService {
 	}
 
 	// Tratamientos
-	async getTreatments(): Promise<TTreatment[]> {
+	async getTreatments(catId: string): Promise<TTreatment[]> {
 		try {
 			const userId = this.getUserId();
-			const treatmentsRef = collection(firebaseDb, COLLECTIONS.TREATMENTS);
-			const q = query(treatmentsRef, where("userId", "==", userId));
-			const querySnapshot = await getDocs(q);
+			const treatmentsRef = collection(firebaseDb, getCollectionPath.treatments(userId, catId));
+			const querySnapshot = await getDocs(treatmentsRef);
 
 			const treatments: TTreatment[] = [];
 			querySnapshot.forEach((doc) => {
@@ -312,6 +368,24 @@ class StorageService {
 		}
 	}
 
+	// Obtener todos los tratamientos de todos los gatos del usuario
+	async getAllTreatments(): Promise<TTreatment[]> {
+		try {
+			const cats = await this.getCats();
+			const allTreatments: TTreatment[] = [];
+
+			for (const cat of cats) {
+				const treatments = await this.getTreatments(cat.id);
+				allTreatments.push(...treatments);
+			}
+
+			return allTreatments;
+		} catch (error) {
+			console.error("Error al obtener todos los tratamientos:", error);
+			return [];
+		}
+	}
+
 	async addTreatment(treatment: Omit<TTreatment, "id">): Promise<TTreatment> {
 		try {
 			const userId = this.getUserId();
@@ -320,8 +394,8 @@ class StorageService {
 				id: generateId(),
 			};
 
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, newTreatment.id);
-			await setDoc(docRef, { ...newTreatment, userId });
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, treatment.catId, newTreatment.id));
+			await setDoc(docRef, newTreatment);
 
 			return newTreatment;
 		} catch (error) {
@@ -333,17 +407,18 @@ class StorageService {
 	async updateTreatment(treatment: TTreatment): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatment.id);
-			await setDoc(docRef, { ...treatment, userId }, { merge: true });
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, treatment.catId, treatment.id));
+			await setDoc(docRef, treatment, { merge: true });
 		} catch (error) {
 			console.error("Error al actualizar tratamiento:", error);
 			throw error;
 		}
 	}
 
-	async deleteTreatment(treatmentId: string): Promise<void> {
+	async deleteTreatment(catId: string, treatmentId: string): Promise<void> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatmentId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, catId, treatmentId));
 			await deleteDoc(docRef);
 		} catch (error) {
 			console.error("Error al eliminar tratamiento:", error);
@@ -351,9 +426,10 @@ class StorageService {
 		}
 	}
 
-	async getTreatment(treatmentId: string): Promise<TTreatment | undefined> {
+	async getTreatment(catId: string, treatmentId: string): Promise<TTreatment | undefined> {
 		try {
-			const docRef = doc(firebaseDb, COLLECTIONS.TREATMENTS, treatmentId);
+			const userId = this.getUserId();
+			const docRef = doc(firebaseDb, getDocPath.treatment(userId, catId, treatmentId));
 			const docSnap = await getDoc(docRef);
 
 			if (docSnap.exists()) {
@@ -371,7 +447,7 @@ class StorageService {
 	async getSettings(): Promise<TSettings> {
 		try {
 			const userId = this.getUserId();
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
+			const settingsRef = doc(firebaseDb, getDocPath.settings(userId));
 			const docSnap = await getDoc(settingsRef);
 
 			if (docSnap.exists()) {
@@ -405,7 +481,7 @@ class StorageService {
 	async saveSettings(settings: TSettings): Promise<void> {
 		try {
 			const userId = this.getUserId();
-			const settingsRef = doc(firebaseDb, COLLECTIONS.SETTINGS, userId);
+			const settingsRef = doc(firebaseDb, getDocPath.settings(userId));
 			await setDoc(settingsRef, { ...settings, id: userId });
 		} catch (error) {
 			console.error("Error al guardar configuraciones:", error);
